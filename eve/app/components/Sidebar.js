@@ -20,8 +20,6 @@ import Animated, {
   Easing,
   interpolateColor
 } from 'react-native-reanimated';
-// Import Tailwind styles
-import styles, { tw } from '../styles/tailwind';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.3; // 30% of screen width
@@ -89,6 +87,11 @@ const Sidebar = ({
     
     return {
       backgroundColor,
+      borderRightColor: interpolateColor(
+        themeAnimValue.value,
+        [0, 1],
+        ['#e0e0e0', '#333333']
+      ),
     };
   });
   
@@ -249,16 +252,30 @@ const Sidebar = ({
     return (
       <TouchableOpacity
         key={conversation.id}
-        style={tw`p-3 ${isDarkTheme ? 'bg-gray-800' : 'bg-gray-50'} ${isActive ? (isDarkTheme ? 'bg-gray-700 border-l-white' : 'bg-gray-100 border-l-black') : (isDarkTheme ? 'border-l-gray-700' : 'border-l-gray-200')} rounded-md mb-3 border-l-2`}
+        style={[
+          styles.card, 
+          isActive && styles.activeCard,
+          isDarkTheme && styles.cardDark,
+          isActive && isDarkTheme && styles.activeCardDark
+        ]}
         onPress={() => onSelectConversation(conversation.id)}
       >
-        <Text style={tw`font-bold mb-1 ${isDarkTheme ? 'text-white' : 'text-black'}`}>
+        <Text style={[
+          styles.cardTitle,
+          isDarkTheme && styles.textLight
+        ]}>
           {conversation.title}
         </Text>
-        <Text style={tw`${isDarkTheme ? 'text-gray-400' : 'text-gray-600'} text-xs mb-2`} numberOfLines={2}>
+        <Text style={[
+          styles.cardPreview,
+          isDarkTheme && styles.textLightSecondary
+        ]} numberOfLines={2}>
           {conversation.preview}
         </Text>
-        <Text style={tw`${isDarkTheme ? 'text-gray-500' : 'text-gray-400'} text-[10px] self-end`}>
+        <Text style={[
+          styles.cardDate,
+          isDarkTheme && styles.textLightTertiary
+        ]}>
           {conversation.date}
         </Text>
       </TouchableOpacity>
@@ -270,15 +287,24 @@ const Sidebar = ({
     return (
       <View 
         key={reflection.id} 
-        style={tw`p-3 ${isDarkTheme ? 'bg-gray-800' : 'bg-gray-50'} rounded-md mb-3`}
+        style={[
+          styles.reflectionCard,
+          isDarkTheme && styles.cardDark
+        ]}
       >
-        <Text style={tw`${isDarkTheme ? 'text-gray-500' : 'text-gray-400'} text-[10px] mb-1`}>
+        <Text style={[
+          styles.reflectionDate,
+          isDarkTheme && styles.textLightTertiary
+        ]}>
           {reflection.date}
         </Text>
-        <Text style={tw`${isDarkTheme ? 'text-white' : 'text-black'} text-xs mb-2`}>
+        <Text style={[
+          styles.reflectionContent,
+          isDarkTheme && styles.textLight
+        ]}>
           {reflection.content}
         </Text>
-        <View style={tw`flex-row`}>
+        <View style={styles.reflectionScore}>
           {[...Array(5)].map((_, i) => (
             <FontAwesome
               key={i}
@@ -295,18 +321,27 @@ const Sidebar = ({
   // AI insight component
   const renderAIInsight = () => {
     return (
-      <View style={tw`p-3 ${isDarkTheme ? 'bg-blue-900/30' : 'bg-blue-50'} rounded-md mb-4 border-l-2 ${isDarkTheme ? 'border-blue-500' : 'border-blue-400'}`}>
-        <View style={tw`flex-row items-center mb-1.5`}>
+      <View style={[
+        styles.insightContainer,
+        isDarkTheme && styles.insightContainerDark
+      ]}>
+        <View style={styles.insightHeader}>
           <FontAwesome 
             name="lightbulb-o" 
             size={16} 
-            color={isDarkTheme ? "#FFD700" : "#4682b4"} 
+            color={isDarkTheme ? "#FFD700" : "#000"} 
           />
-          <Text style={tw`font-bold ml-1.5 ${isDarkTheme ? 'text-white' : 'text-black'}`}>
+          <Text style={[
+            styles.insightTitle,
+            isDarkTheme && styles.textLight
+          ]}>
             AI Insight
           </Text>
         </View>
-        <Text style={tw`${isDarkTheme ? 'text-gray-300' : 'text-gray-700'} text-xs`}>
+        <Text style={[
+          styles.insightText,
+          isDarkTheme && styles.textLightSecondary
+        ]}>
           Based on your recent reflections, you've been making steady progress in managing stress.
           Your scores have improved over time, indicating that the mindfulness techniques are working well for you.
         </Text>
@@ -315,50 +350,68 @@ const Sidebar = ({
   };
   
   return (
-    <Animated.View style={[tw`h-full`, containerStyle]}>
+    <Animated.View style={[styles.container, containerStyle]}>
       {/* Profile section */}
-      <View style={tw`items-center py-8 px-2 ${isDarkTheme ? 'border-gray-800' : 'border-gray-200'} border-b`}>
-        <View style={tw`rounded-full overflow-hidden shadow-md mb-2.5 border-2 ${isDarkTheme ? 'border-gray-700' : 'border-white'}`}>
-          <Image
-            source={{ uri: 'https://via.placeholder.com/60' }}
-            style={tw`w-15 h-15 rounded-full`}
-          />
-        </View>
-        <Text style={tw`font-bold ${isDarkTheme ? 'text-white' : 'text-black'}`}>
+      <View style={[
+        styles.profileSection,
+        isDarkTheme && styles.profileSectionDark
+      ]}>
+        <Image
+          source={{ uri: 'https://via.placeholder.com/60' }}
+          style={styles.profileImage}
+        />
+        <Text style={[
+          styles.profileName,
+          isDarkTheme && styles.textLight
+        ]}>
           User Name
         </Text>
       </View>
       
       {/* Tab navigation */}
-      <View style={tw`flex-row ${isDarkTheme ? 'border-gray-800' : 'border-gray-200'} border-b relative`}>
+      <View style={[
+        styles.tabContainer,
+        isDarkTheme && styles.tabContainerDark
+      ]}>
         <Animated.View 
           style={[
-            tw`absolute bottom-0 w-1/2 h-0.5 ${isDarkTheme ? 'bg-white' : 'bg-black'}`, 
-            tabIndicatorStyle
+            styles.tabIndicator, 
+            tabIndicatorStyle,
+            isDarkTheme && styles.tabIndicatorDark
           ]} 
         />
         
         <TouchableOpacity
-          style={tw`flex-1 py-4 items-center z-1`}
+          style={styles.tab}
           onPress={() => switchTab('conversations')}
         >
-          <Text style={tw`${activeTab === 'conversations' ? 'font-bold' : ''} ${isDarkTheme ? 'text-white' : 'text-black'}`}>
+          <Text style={[
+            styles.tabText,
+            activeTab === 'conversations' && styles.activeTabText,
+            isDarkTheme && styles.textLight,
+            activeTab === 'conversations' && isDarkTheme && styles.activeTabTextDark
+          ]}>
             Conversations
           </Text>
         </TouchableOpacity>
         
         <TouchableOpacity
-          style={tw`flex-1 py-4 items-center z-1`}
+          style={styles.tab}
           onPress={() => switchTab('reflections')}
         >
-          <Text style={tw`${activeTab === 'reflections' ? 'font-bold' : ''} ${isDarkTheme ? 'text-white' : 'text-black'}`}>
+          <Text style={[
+            styles.tabText,
+            activeTab === 'reflections' && styles.activeTabText,
+            isDarkTheme && styles.textLight,
+            activeTab === 'reflections' && isDarkTheme && styles.activeTabTextDark
+          ]}>
             Reflections
           </Text>
         </TouchableOpacity>
       </View>
       
       {/* Content container */}
-      <ScrollView style={tw`flex-1 px-2.5 py-2`}>
+      <ScrollView style={styles.contentContainer}>
         {/* Conversations Tab Content */}
         <Animated.View 
           style={[
@@ -369,15 +422,24 @@ const Sidebar = ({
           {conversations.map(renderConversationCard)}
           
           {loading ? (
-            <Text style={tw`text-center py-2.5 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
+            <Text style={[
+              styles.loadingText,
+              isDarkTheme && styles.textLightTertiary
+            ]}>
               Loading...
             </Text>
           ) : (
             <TouchableOpacity 
-              style={tw`p-2.5 ${isDarkTheme ? 'bg-gray-800' : 'bg-gray-100'} rounded-md items-center mt-2.5 mb-5`} 
+              style={[
+                styles.loadMoreButton,
+                isDarkTheme && styles.loadMoreButtonDark
+              ]} 
               onPress={loadMore}
             >
-              <Text style={tw`${isDarkTheme ? 'text-white' : 'text-gray-800'} font-medium text-xs`}>
+              <Text style={[
+                styles.loadMoreText,
+                isDarkTheme && styles.textLight
+              ]}>
                 Load More
               </Text>
             </TouchableOpacity>
@@ -392,9 +454,15 @@ const Sidebar = ({
           ]}
         >
           {/* New reflection input */}
-          <View style={tw`mb-4 ${isDarkTheme ? 'bg-gray-800' : 'bg-gray-50'} rounded-md p-2`}>
+          <View style={[
+            styles.reflectionInputContainer,
+            isDarkTheme && styles.cardDark
+          ]}>
             <TextInput
-              style={tw`h-20 p-2 ${isDarkTheme ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200'} rounded-md border text-xs`}
+              style={[
+                styles.reflectionInput,
+                isDarkTheme && styles.reflectionInputDark
+              ]}
               placeholder="Write your reflection for today..."
               placeholderTextColor={isDarkTheme ? '#888' : '#999'}
               value={reflection}
@@ -404,17 +472,26 @@ const Sidebar = ({
             />
             <Animated.View style={submitButtonStyle}>
               <TouchableOpacity 
-                style={tw`${isDarkTheme ? 'bg-primary-light' : 'bg-primary'} p-2.5 rounded-md items-center mt-2`}
+                style={[
+                  styles.submitButton,
+                  isDarkTheme && styles.submitButtonDark
+                ]}
                 onPress={submitReflection}
               >
-                <Text style={tw`text-white font-bold text-xs`}>Submit</Text>
+                <Text style={styles.submitText}>Submit</Text>
               </TouchableOpacity>
             </Animated.View>
           </View>
           
           {/* Reflection chart */}
-          <View style={tw`mb-4 ${isDarkTheme ? 'bg-gray-800' : 'bg-gray-50'} rounded-md p-2 items-center`}>
-            <Text style={tw`font-bold mb-2 ${isDarkTheme ? 'text-white' : 'text-black'}`}>
+          <View style={[
+            styles.chartContainer,
+            isDarkTheme && styles.cardDark
+          ]}>
+            <Text style={[
+              styles.chartTitle,
+              isDarkTheme && styles.textLight
+            ]}>
               Mood Trend
             </Text>
             <LineChart
@@ -437,7 +514,7 @@ const Sidebar = ({
                 },
               }}
               bezier
-              style={tw`rounded-md mt-1.5`}
+              style={styles.chart}
             />
           </View>
           
@@ -445,7 +522,10 @@ const Sidebar = ({
           {renderAIInsight()}
           
           {/* Reflection history */}
-          <Text style={tw`font-bold ${isDarkTheme ? 'text-white' : 'text-black'} text-base mt-2 mb-3`}>
+          <Text style={[
+            styles.sectionTitle,
+            isDarkTheme && styles.textLight
+          ]}>
             Past Reflections
           </Text>
           {reflectionHistory.map(renderReflectionCard)}
@@ -454,5 +534,245 @@ const Sidebar = ({
     </Animated.View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#fff',
+    borderRightWidth: 1,
+    borderRightColor: '#e0e0e0',
+  },
+  profileSection: {
+    alignItems: 'center',
+    paddingTop: 50,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  profileSectionDark: {
+    borderBottomColor: '#333',
+  },
+  profileImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginBottom: 10,
+  },
+  profileName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    position: 'relative',
+  },
+  tabContainerDark: {
+    borderBottomColor: '#333',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 15,
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  tabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: '50%',
+    height: 2,
+    backgroundColor: '#000',
+    zIndex: 0,
+  },
+  tabIndicatorDark: {
+    backgroundColor: '#FFF',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  activeTabText: {
+    fontWeight: 'bold',
+  },
+  activeTabTextDark: {
+    color: '#FFF',
+  },
+  contentContainer: {
+    flex: 1,
+    padding: 10,
+  },
+  card: {
+    padding: 12,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#ddd',
+  },
+  cardDark: {
+    backgroundColor: '#2A2A2A',
+    borderLeftColor: '#444',
+  },
+  activeCard: {
+    borderLeftColor: '#000',
+    backgroundColor: '#f0f0f0',
+  },
+  activeCardDark: {
+    borderLeftColor: '#FFF',
+    backgroundColor: '#333',
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  cardPreview: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+  },
+  cardDate: {
+    fontSize: 10,
+    color: '#999',
+    alignSelf: 'flex-end',
+  },
+  loadingText: {
+    textAlign: 'center',
+    padding: 10,
+    color: '#666',
+  },
+  loadMoreButton: {
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  loadMoreButtonDark: {
+    backgroundColor: '#333',
+  },
+  loadMoreText: {
+    color: '#333',
+    fontWeight: '500',
+    fontSize: 12,
+  },
+  reflectionInputContainer: {
+    marginBottom: 15,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 8,
+  },
+  reflectionInput: {
+    height: 80,
+    textAlignVertical: 'top',
+    padding: 8,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    fontSize: 12,
+  },
+  reflectionInputDark: {
+    backgroundColor: '#333',
+    borderColor: '#444',
+    color: '#FFF',
+  },
+  submitButton: {
+    backgroundColor: '#000',
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  submitButtonDark: {
+    backgroundColor: '#4682b4',
+  },
+  submitText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  chartContainer: {
+    marginBottom: 15,
+    padding: 8,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  chartTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  chart: {
+    borderRadius: 8,
+    marginVertical: 6,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  reflectionCard: {
+    padding: 12,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  reflectionDate: {
+    fontSize: 10,
+    color: '#999',
+    marginBottom: 3,
+  },
+  reflectionContent: {
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  reflectionScore: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  insightContainer: {
+    padding: 12,
+    backgroundColor: '#f0f8ff',
+    borderRadius: 8,
+    marginBottom: 15,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4682b4',
+  },
+  insightContainerDark: {
+    backgroundColor: '#1e2a3a',
+    borderLeftColor: '#4682b4',
+  },
+  insightHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  insightTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginLeft: 6,
+  },
+  insightText: {
+    fontSize: 12,
+    color: '#333',
+    lineHeight: 18,
+  },
+  textLight: {
+    color: '#FFF',
+  },
+  textLightSecondary: {
+    color: '#AAA',
+  },
+  textLightTertiary: {
+    color: '#777',
+  },
+});
 
 export default Sidebar; 

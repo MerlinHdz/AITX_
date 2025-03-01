@@ -24,21 +24,15 @@ import Animated, {
   withSequence 
 } from "react-native-reanimated";
 import Sidebar from './components/Sidebar';
-// Import Tailwind styles
-import styles, { tw } from './styles/tailwind';
 
 // Responsive sizing based on screen size
 const getResponsiveStyles = (width, height) => {
   const isLargeScreen = width >= 768; // tablet or larger
-  const isWebLike = width >= 1024; // desktop or larger browser window
   const isSmallScreen = width < 375; // small phones
   const isLandscape = width > height;
   
-  // Sidebar width adjusted for different device sizes
-  // For web: fixed width of 300px looks better than percentage
-  // For tablets: 30% width provides good balance
-  // For mobile: 70% when visible to provide enough space for content
-  const sidebarWidth = isWebLike ? 300 : (isLargeScreen ? width * 0.3 : width * 0.7);
+  // Sidebar width: 30% on large screens, 70% when sidebar is visible on small screens
+  const sidebarWidth = isLargeScreen ? width * 0.25 : width * 0.7;
   
   // Adjust font sizes for different screen sizes
   const titleSize = isSmallScreen ? 18 : isLargeScreen ? 24 : 22;
@@ -53,7 +47,6 @@ const getResponsiveStyles = (width, height) => {
     iconSize,
     buttonSize,
     isLargeScreen,
-    isWebLike,
     isSmallScreen,
     isLandscape
   };
@@ -69,13 +62,14 @@ export default function Index() {
     iconSize, 
     buttonSize,
     isLargeScreen,
-    isWebLike,
     isSmallScreen
   } = getResponsiveStyles(dimensions.width, dimensions.height);
   
   // State for showing/hiding sidebar on mobile
   const [isSidebarVisible, setIsSidebarVisible] = useState(isLargeScreen);
   
+  const micOpacity = useSharedValue(1);
+  const circleScale = useSharedValue(0);
   const micButtonScale = useSharedValue(1);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [activeView, setActiveView] = useState('dashboard');
@@ -96,9 +90,6 @@ export default function Index() {
   const [isDarkTheme, setIsDarkTheme] = useState(false);
   const themeAnimValue = useSharedValue(0);
   
-  // Get dynamic Tailwind styles
-  const dynamicStyles = styles.getDynamicStyles(isDarkTheme, isLargeScreen, isWebLike);
-  
   // Update sidebar visibility when screen size changes
   useEffect(() => {
     if (isLargeScreen) {
@@ -116,6 +107,15 @@ export default function Index() {
       easing: Easing.bezier(0.25, 0.1, 0.25, 1),
     });
   }, [isDarkTheme]);
+
+  const micStyle = useAnimatedStyle(() => ({
+    opacity: micOpacity.value,
+  }));
+
+  const circleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: circleScale.value }],
+    opacity: circleScale.value > 0 ? 1 : 0,
+  }));
   
   const micButtonAnimStyle = useAnimatedStyle(() => {
     return {
@@ -134,38 +134,21 @@ export default function Index() {
         ? dimensions.width - sidebarWidth 
         : '100%',
       marginLeft: isLargeScreen && isSidebarVisible ? sidebarWidth : 0,
-      flex: 1,
-      paddingTop: 70, // Add space for the floating navbar
     };
   });
   
-  // Sidebar animation style - now using the floating sidebar style from Tailwind
+  // Sidebar animation style
   const sidebarStyle = useAnimatedStyle(() => {
     return {
       transform: [
         { scale: sidebarScale.value },
         { translateX: sidebarTranslateX.value }
       ],
-      ...dynamicStyles.floatingSidebarStyle,
-    };
-  });
-  
-  // Floating navbar animation style
-  const navbarStyle = useAnimatedStyle(() => {
-    const backgroundColor = interpolateColor(
-      themeAnimValue.value,
-      [0, 1],
-      ['#FFFFFF', '#121212']
-    );
-    
-    return {
-      backgroundColor,
-      ...tw`rounded-xl shadow-lg py-3 px-5`,
-      position: 'absolute',
-      top: 20,
-      left: isLargeScreen ? (isWebLike ? 320 : 300) : 20,
-      right: 80,
-      zIndex: 90,
+      position: isLargeScreen ? 'relative' : 'absolute',
+      zIndex: 100,
+      height: '100%',
+      width: sidebarWidth,
+      left: 0,
     };
   });
   
@@ -202,6 +185,11 @@ export default function Index() {
       withTiming(1, { duration: 150 })
     );
     
+    // If circle animation hasn't happened yet, trigger it
+    if (micOpacity.value === 1) {
+      startAnimation();
+    }
+    
     // Toggle recording state
     setIsRecording(prev => !prev);
     
@@ -233,13 +221,6 @@ export default function Index() {
         }
       }, 3000);
     }
-    
-    // Focus the chat input
-    setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
-    }, 300);
   };
   
   // Simulate getting text from speech (this would be replaced with actual speech recognition)
@@ -251,6 +232,18 @@ export default function Index() {
       " I'm having trouble sleeping lately"
     ];
     return phrases[Math.floor(Math.random() * phrases.length)];
+  };
+
+  const startAnimation = () => {
+    micOpacity.value = withTiming(0, { duration: 500 });
+    circleScale.value = withTiming(1, { duration: 600 });
+    
+    // Focus the chat input after animation
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 700);
   };
   
   const toggleTheme = () => {
@@ -374,20 +367,28 @@ export default function Index() {
     if (activeView === 'conversation' && currentConversationId) {
       // Render conversation view (for historic conversations)
       return (
-        <View style={tw`flex-1 w-full p-5`}>
-          <View style={tw`flex-row items-center py-4 border-b ${isDarkTheme ? 'border-gray-800' : 'border-gray-200'} mb-5`}>
+        <View style={styles.conversationContainer}>
+          <View style={styles.conversationHeader}>
             <TouchableOpacity 
               onPress={() => handleNavigate('dashboard')}
-              style={tw`p-2.5 mr-2.5`}
+              style={styles.backButton}
             >
               <FontAwesome name="arrow-left" size={iconSize} color={isDarkTheme ? "#FFFFFF" : "#000000"} />
             </TouchableOpacity>
-            <Text style={tw`font-bold ${isDarkTheme ? 'text-white' : 'text-black'} text-lg`}>
+            <Text style={[
+              styles.conversationTitle, 
+              isDarkTheme && styles.textLight,
+              { fontSize: titleSize * 0.8 }
+            ]}>
               Conversation #{currentConversationId}
             </Text>
           </View>
-          <View style={tw`flex-1 justify-center items-center`}>
-            <Text style={tw`${isDarkTheme ? 'text-white' : 'text-black'} text-base`}>
+          <View style={styles.messageContainer}>
+            <Text style={[
+              styles.messageText, 
+              isDarkTheme && styles.textLight,
+              { fontSize: textSize }
+            ]}>
               This is where the conversation content would appear.
             </Text>
           </View>
@@ -398,14 +399,14 @@ export default function Index() {
     // Default dashboard view with chat functionality
     return (
       <KeyboardAvoidingView 
-        style={tw`flex-1 justify-between items-center relative w-full`}
+        style={styles.dashboardContainer}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
       >
         {/* Sidebar toggle button - only on mobile */}
         {!isLargeScreen && (
           <TouchableOpacity 
-            style={tw`absolute top-5 left-5 z-10 p-2.5 rounded-full ${isDarkTheme ? 'bg-gray-800 bg-opacity-50' : 'bg-gray-200 bg-opacity-30'}`}
+            style={[styles.sidebarToggle, isDarkTheme && styles.sidebarToggleDark]}
             onPress={toggleSidebar}
           >
             <FontAwesome 
@@ -416,55 +417,92 @@ export default function Index() {
           </TouchableOpacity>
         )}
         
+        {/* App title */}
+        <Text style={[
+          styles.title, 
+          isDarkTheme && styles.textLight, 
+          messages.length > 0 && styles.titleSmall,
+          { fontSize: messages.length > 0 ? titleSize * 0.8 : titleSize }
+        ]}>
+          Eve Your Therapist on the Go
+        </Text>
+
+        {/* Animated circle - show behind content always */}
+        <Animated.View style={[
+          styles.circle, 
+          circleStyle, 
+          isDarkTheme && styles.circleDark,
+          { width: dimensions.width * 0.5, height: dimensions.width * 0.5 }
+        ]} />
+        
         {/* Messages container */}
-        <ScrollView
-          style={tw`flex-1 w-full px-5`}
-          contentContainerStyle={tw`flex-grow justify-end py-5 pb-7.5`}
-          ref={scrollViewRef}
-        >
-          {messages.map(message => (
-            <View 
-              key={message.id} 
-              style={[
-                tw`max-w-[80%] p-3 rounded-xl mb-2.5`,
-                message.sender === 'user' 
-                  ? tw`self-end ${isDarkTheme ? 'bg-primary-light' : 'bg-primary'} rounded-tr-sm ml-[50px]`
-                  : tw`self-start ${isDarkTheme ? 'bg-accent-dark' : 'bg-accent'} rounded-tl-sm mr-[50px]`
-              ]}
-            >
-              <Text style={[
-                tw`leading-[22px]`,
-                message.sender === 'user' 
-                  ? tw`text-white`
-                  : isDarkTheme ? tw`text-white` : tw`text-black`
+        {(messages.length > 0 || micOpacity.value < 1) && (
+          <ScrollView
+            style={[styles.messagesContainer, messages.length === 0 && styles.emptyMessagesContainer]}
+            contentContainerStyle={styles.messagesContent}
+            ref={scrollViewRef}
+          >
+            {messages.map(message => (
+              <View 
+                key={message.id} 
+                style={[
+                  styles.messageBubble,
+                  message.sender === 'user' ? styles.userBubble : styles.aiBubble,
+                  message.sender === 'user' 
+                    ? (isDarkTheme ? styles.userBubbleDark : {}) 
+                    : (isDarkTheme ? styles.aiBubbleDark : {})
+                ]}
+              >
+                <Text style={[
+                  styles.messageText,
+                  message.sender === 'user' ? styles.userMessageText : styles.aiMessageText,
+                  message.sender === 'ai' && isDarkTheme && styles.aiMessageTextDark,
+                  { fontSize: textSize }
+                ]}>
+                  {message.text}
+                </Text>
+              </View>
+            ))}
+            
+            {/* Typing indicator */}
+            {isTyping && (
+              <View style={[
+                styles.messageBubble, 
+                styles.aiBubble,
+                isDarkTheme && styles.aiBubbleDark,
+                styles.typingBubble
               ]}>
-                {message.text}
-              </Text>
-            </View>
-          ))}
-          
-          {/* Typing indicator */}
-          {isTyping && (
-            <View style={tw`self-start max-w-[80%] p-3 rounded-xl mb-2.5 py-2 px-3.5 ${isDarkTheme ? 'bg-accent-dark' : 'bg-accent'} rounded-tl-sm mr-[50px]`}>
-              <Text style={tw`${isDarkTheme ? 'text-gray-400' : 'text-gray-600'} text-sm`}>
-                Eve is typing
-                <Text style={tw`tracking-widest`}>...</Text>
-              </Text>
-            </View>
-          )}
-        </ScrollView>
+                <Text style={[
+                  styles.typingText,
+                  isDarkTheme && styles.typingTextDark,
+                  { fontSize: textSize * 0.85 }
+                ]}>
+                  Eve is typing
+                  <Text style={styles.typingDots}>...</Text>
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        )}
         
         {/* Chat input area at the bottom */}
-        <View style={tw`w-full px-5 items-center mb-5 mt-2.5 ${isWebLike && 'px-[50px]'}`}>
+        <View style={styles.chatInputWrapper}>
           <View 
-            style={tw`flex-row items-center ${isDarkTheme ? 'bg-accent-dark border-secondary-dark' : 'bg-secondary-light border-secondary'} rounded-full px-3 py-1.5 w-[95%] max-w-[600px] border shadow-sm`}
+            style={[
+              styles.chatInputContainer,
+              isDarkTheme && styles.chatInputContainerDark,
+              micOpacity.value === 0 && styles.chatInputActive,
+              { height: Math.max(buttonSize + 10, 50) }
+            ]}
           >
             {/* Microphone button (now inside the input) */}
             <Animated.View style={micButtonAnimStyle}>
               <TouchableOpacity 
                 onPress={handleMicPress}
                 style={[
-                  tw`justify-center items-center mr-2 ${isDarkTheme ? 'bg-white bg-opacity-10' : 'bg-black bg-opacity-5'} ${isRecording && 'bg-error bg-opacity-10'}`,
+                  styles.micButton, 
+                  isDarkTheme && styles.micButtonDark,
+                  isRecording && styles.micButtonRecording,
                   { width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }
                 ]}
               >
@@ -480,7 +518,11 @@ export default function Index() {
           
             <TextInput
               ref={inputRef}
-              style={tw`flex-1 py-2.5 pr-2.5 pl-1.5 min-h-[40px] ${isDarkTheme && 'text-white'}`}
+              style={[
+                styles.chatInput,
+                isDarkTheme && styles.chatInputDark,
+                { fontSize: textSize }
+              ]}
               placeholder="Type a message..."
               placeholderTextColor={isDarkTheme ? "#777" : "#999"}
               value={chatMessage}
@@ -493,7 +535,10 @@ export default function Index() {
             />
             <TouchableOpacity 
               style={[
-                tw`${!chatMessage.trim() ? (isDarkTheme ? 'bg-secondary-dark' : 'bg-secondary') : (isDarkTheme ? 'bg-primary-light' : 'bg-primary')} justify-center items-center`,
+                styles.sendButton,
+                isDarkTheme && styles.sendButtonDark,
+                !chatMessage.trim() && styles.sendButtonDisabled,
+                !chatMessage.trim() && isDarkTheme && styles.sendButtonDisabledDark,
                 { width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }
               ]} 
               onPress={handleSendMessage}
@@ -504,7 +549,7 @@ export default function Index() {
                 size={buttonSize * 0.45} 
                 color={!chatMessage.trim() 
                   ? (isDarkTheme ? "#555" : "#CCC") 
-                  : "#FFFFFF"} 
+                  : (isDarkTheme ? "#FFFFFF" : "#FFFFFF")} 
               />
             </TouchableOpacity>
           </View>
@@ -514,12 +559,13 @@ export default function Index() {
   };
 
   return (
-    <Animated.View style={[tw`flex-1`, containerStyle]}>
-      <SafeAreaView style={tw`flex-1 flex-row`}>
+    <Animated.View style={[styles.container, containerStyle]}>
+      <SafeAreaView style={styles.safeArea}>
         {/* Theme toggle button */}
         <TouchableOpacity 
           style={[
-            tw`absolute top-5 right-5 z-[101] p-2.5 rounded-full ${isDarkTheme ? 'bg-gray-800 bg-opacity-50' : 'bg-gray-200 bg-opacity-30'}`,
+            styles.themeToggle, 
+            isDarkTheme && styles.themeToggleDark,
             { width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }
           ]}
           onPress={toggleTheme}
@@ -531,31 +577,22 @@ export default function Index() {
           />
         </TouchableOpacity>
         
-        {/* Floating Navbar */}
-        <Animated.View style={navbarStyle}>
-          <Text style={tw`font-bold text-center ${isDarkTheme ? 'text-white' : 'text-black'} ${messages.length > 0 ? 'text-lg' : 'text-xl'}`}>
-            Eve Your Therapist on the Go
-          </Text>
-        </Animated.View>
-        
         {/* Sidebar overlay - shown when sidebar is visible on mobile */}
         {!isLargeScreen && isSidebarVisible && (
           <TouchableOpacity
-            style={tw`absolute inset-0 bg-black bg-opacity-50 z-50`}
+            style={styles.sidebarOverlay}
             activeOpacity={1}
             onPress={toggleSidebar}
           />
         )}
         
-        {/* Floating Sidebar with animation */}
+        {/* Sidebar with animation */}
         <Animated.View style={sidebarStyle}>
-          <View style={tw`h-full rounded-xl overflow-hidden`}>
-            <Sidebar 
-              onSelectConversation={handleSelectConversation}
-              currentConversationId={currentConversationId}
-              isDarkTheme={isDarkTheme}
-            />
-          </View>
+          <Sidebar 
+            onSelectConversation={handleSelectConversation}
+            currentConversationId={currentConversationId}
+            isDarkTheme={isDarkTheme}
+          />
         </Animated.View>
         
         {/* Main content with animation */}
@@ -565,4 +602,242 @@ export default function Index() {
       </SafeAreaView>
     </Animated.View>
   );
-} 
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  safeArea: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  sidebarOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    zIndex: 50,
+  },
+  mainContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dashboardContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    position: 'relative',
+    width: '100%',
+    paddingTop: Platform.OS === 'web' ? 20 : 40,
+  },
+  sidebarToggle: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    zIndex: 10,
+    padding: 10,
+    borderRadius: 20,
+    backgroundColor: 'rgba(200, 200, 200, 0.3)',
+  },
+  sidebarToggleDark: {
+    backgroundColor: 'rgba(60, 60, 60, 0.5)',
+  },
+  title: {
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+    paddingHorizontal: 40,
+  },
+  titleSmall: {
+    marginBottom: 10,
+  },
+  micContainer: {
+    marginBottom: 5,
+  },
+  circle: {
+    borderRadius: 999,
+    backgroundColor: 'black',
+    position: 'absolute',
+    zIndex: -1,
+  },
+  circleDark: {
+    backgroundColor: '#4682b4',
+  },
+  textLight: {
+    color: '#FFFFFF',
+  },
+  themeToggle: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 101, // Above sidebar
+    padding: 10,
+    borderRadius: 20,
+    backgroundColor: 'rgba(200, 200, 200, 0.3)',
+  },
+  themeToggleDark: {
+    backgroundColor: 'rgba(60, 60, 60, 0.5)',
+  },
+  conversationContainer: {
+    flex: 1,
+    width: '100%',
+    padding: 20,
+  },
+  conversationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    marginBottom: 20,
+  },
+  backButton: {
+    padding: 10,
+    marginRight: 10,
+  },
+  conversationTitle: {
+    fontWeight: 'bold',
+  },
+  messageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Message display styles
+  messagesContainer: {
+    flex: 1,
+    width: '100%',
+    paddingHorizontal: 20,
+  },
+  emptyMessagesContainer: {
+    opacity: 0, // Hide when no messages, but keep layout
+  },
+  messagesContent: {
+    flexGrow: 1,
+    justifyContent: 'flex-end',
+    paddingVertical: 20,
+  },
+  messageBubble: {
+    maxWidth: '80%',
+    padding: 12,
+    borderRadius: 18,
+    marginBottom: 10,
+  },
+  userBubble: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#000',
+    borderTopRightRadius: 4,
+  },
+  userBubbleDark: {
+    backgroundColor: '#4682b4',
+  },
+  aiBubble: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#f0f0f0',
+    borderTopLeftRadius: 4,
+  },
+  aiBubbleDark: {
+    backgroundColor: '#333',
+  },
+  messageText: {
+    lineHeight: 22,
+  },
+  userMessageText: {
+    color: '#fff',
+  },
+  aiMessageText: {
+    color: '#000',
+  },
+  aiMessageTextDark: {
+    color: '#fff',
+  },
+  typingBubble: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  typingText: {
+    color: '#555',
+  },
+  typingTextDark: {
+    color: '#ccc',
+  },
+  typingDots: {
+    letterSpacing: 2,
+  },
+  // Chat input styles
+  chatInputWrapper: {
+    width: '100%',
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    marginBottom: Platform.OS === 'ios' ? 30 : 20,
+    marginTop: 10,
+  },
+  chatInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 25,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    width: '95%',
+    maxWidth: 600,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+    transform: [{scale: 0.98}],
+    opacity: 0.9,
+  },
+  chatInputContainerDark: {
+    backgroundColor: '#2A2A2A',
+    borderColor: '#444',
+  },
+  chatInputActive: {
+    transform: [{scale: 1}],
+    opacity: 1,
+  },
+  // New microphone button styles
+  micButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  micButtonDark: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  micButtonRecording: {
+    backgroundColor: 'rgba(255, 65, 54, 0.1)',
+  },
+  chatInput: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingRight: 10,
+    paddingLeft: 5,
+    minHeight: 40,
+  },
+  chatInputDark: {
+    color: '#FFFFFF',
+  },
+  sendButton: {
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendButtonDark: {
+    backgroundColor: '#4682b4',
+  },
+  sendButtonDisabled: {
+    backgroundColor: '#E0E0E0',
+  },
+  sendButtonDisabledDark: {
+    backgroundColor: '#444',
+  },
+}); 
