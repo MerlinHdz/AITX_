@@ -4,7 +4,6 @@ import {
   View, 
   TouchableOpacity, 
   StyleSheet, 
-  Dimensions, 
   SafeAreaView, 
   TextInput, 
   Keyboard, 
@@ -12,7 +11,8 @@ import {
   KeyboardAvoidingView, 
   Platform, 
   Alert,
-  useWindowDimensions 
+  useWindowDimensions,
+  StatusBar
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import Animated, { 
@@ -31,8 +31,8 @@ const getResponsiveStyles = (width, height) => {
   const isSmallScreen = width < 375; // small phones
   const isLandscape = width > height;
   
-  // Sidebar width: 30% on large screens, 70% when sidebar is visible on small screens
-  const sidebarWidth = isLargeScreen ? width * 0.25 : width * 0.7;
+  // Sidebar width: fixed width on desktop, percentage on mobile
+  const sidebarWidth = isLargeScreen ? 300 : width * 0.8;
   
   // Adjust font sizes for different screen sizes
   const titleSize = isSmallScreen ? 18 : isLargeScreen ? 24 : 22;
@@ -130,10 +130,8 @@ export default function Index() {
       transform: [
         { translateX: contentTranslateX.value },
       ],
-      width: isLargeScreen && isSidebarVisible 
-        ? dimensions.width - sidebarWidth 
-        : '100%',
-      marginLeft: isLargeScreen && isSidebarVisible ? sidebarWidth : 0,
+      flex: 1,
+      width: isLargeScreen ? undefined : '100%',
     };
   });
   
@@ -148,7 +146,10 @@ export default function Index() {
       zIndex: 100,
       height: '100%',
       width: sidebarWidth,
+      maxWidth: sidebarWidth,
       left: 0,
+      borderRightWidth: 1,
+      borderRightColor: isDarkTheme ? '#333333' : '#e0e0e0',
     };
   });
   
@@ -362,244 +363,267 @@ export default function Index() {
     }, 1500);
   };
 
-  // Render the appropriate view based on active view state
-  const renderMainContent = () => {
-    if (activeView === 'conversation' && currentConversationId) {
-      // Render conversation view (for historic conversations)
-      return (
-        <View style={styles.conversationContainer}>
-          <View style={styles.conversationHeader}>
-            <TouchableOpacity 
-              onPress={() => handleNavigate('dashboard')}
-              style={styles.backButton}
-            >
-              <FontAwesome name="arrow-left" size={iconSize} color={isDarkTheme ? "#FFFFFF" : "#000000"} />
-            </TouchableOpacity>
-            <Text style={[
-              styles.conversationTitle, 
-              isDarkTheme && styles.textLight,
-              { fontSize: titleSize * 0.8 }
-            ]}>
-              Conversation #{currentConversationId}
-            </Text>
-          </View>
-          <View style={styles.messageContainer}>
-            <Text style={[
-              styles.messageText, 
-              isDarkTheme && styles.textLight,
-              { fontSize: textSize }
-            ]}>
-              This is where the conversation content would appear.
-            </Text>
-          </View>
-        </View>
-      );
-    }
-    
-    // Default dashboard view with chat functionality
-    return (
-      <KeyboardAvoidingView 
-        style={styles.dashboardContainer}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
-      >
-        {/* Sidebar toggle button - only on mobile */}
-        {!isLargeScreen && (
-          <TouchableOpacity 
-            style={[styles.sidebarToggle, isDarkTheme && styles.sidebarToggleDark]}
-            onPress={toggleSidebar}
-          >
-            <FontAwesome 
-              name="bars" 
-              size={iconSize} 
-              color={isDarkTheme ? "#FFFFFF" : "#000000"} 
-            />
-          </TouchableOpacity>
-        )}
-        
-        {/* App title */}
-        <Text style={[
-          styles.title, 
-          isDarkTheme && styles.textLight, 
-          messages.length > 0 && styles.titleSmall,
-          { fontSize: messages.length > 0 ? titleSize * 0.8 : titleSize }
-        ]}>
-          Eve Your Therapist on the Go
-        </Text>
-
-        {/* Animated circle - show behind content always */}
-        <Animated.View style={[
-          styles.circle, 
-          circleStyle, 
-          isDarkTheme && styles.circleDark,
-          { width: dimensions.width * 0.5, height: dimensions.width * 0.5 }
-        ]} />
-        
-        {/* Messages container */}
-        {(messages.length > 0 || micOpacity.value < 1) && (
-          <ScrollView
-            style={[styles.messagesContainer, messages.length === 0 && styles.emptyMessagesContainer]}
-            contentContainerStyle={styles.messagesContent}
-            ref={scrollViewRef}
-          >
-            {messages.map(message => (
-              <View 
-                key={message.id} 
-                style={[
-                  styles.messageBubble,
-                  message.sender === 'user' ? styles.userBubble : styles.aiBubble,
-                  message.sender === 'user' 
-                    ? (isDarkTheme ? styles.userBubbleDark : {}) 
-                    : (isDarkTheme ? styles.aiBubbleDark : {})
-                ]}
-              >
-                <Text style={[
-                  styles.messageText,
-                  message.sender === 'user' ? styles.userMessageText : styles.aiMessageText,
-                  message.sender === 'ai' && isDarkTheme && styles.aiMessageTextDark,
-                  { fontSize: textSize }
-                ]}>
-                  {message.text}
-                </Text>
-              </View>
-            ))}
-            
-            {/* Typing indicator */}
-            {isTyping && (
-              <View style={[
-                styles.messageBubble, 
-                styles.aiBubble,
-                isDarkTheme && styles.aiBubbleDark,
-                styles.typingBubble
-              ]}>
-                <Text style={[
-                  styles.typingText,
-                  isDarkTheme && styles.typingTextDark,
-                  { fontSize: textSize * 0.85 }
-                ]}>
-                  Eve is typing
-                  <Text style={styles.typingDots}>...</Text>
-                </Text>
-              </View>
-            )}
-          </ScrollView>
-        )}
-        
-        {/* Chat input area at the bottom */}
-        <View style={styles.chatInputWrapper}>
-          <View 
-            style={[
-              styles.chatInputContainer,
-              isDarkTheme && styles.chatInputContainerDark,
-              micOpacity.value === 0 && styles.chatInputActive,
-              { height: Math.max(buttonSize + 10, 50) }
-            ]}
-          >
-            {/* Microphone button (now inside the input) */}
-            <Animated.View style={micButtonAnimStyle}>
-              <TouchableOpacity 
-                onPress={handleMicPress}
-                style={[
-                  styles.micButton, 
-                  isDarkTheme && styles.micButtonDark,
-                  isRecording && styles.micButtonRecording,
-                  { width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }
-                ]}
-              >
-                <FontAwesome 
-                  name={isRecording ? "stop-circle" : "microphone"} 
-                  size={buttonSize * 0.5} 
-                  color={isRecording 
-                    ? "#FF4136" 
-                    : (isDarkTheme ? "#FFFFFF" : "#000000")} 
-                />
-              </TouchableOpacity>
-            </Animated.View>
-          
-            <TextInput
-              ref={inputRef}
-              style={[
-                styles.chatInput,
-                isDarkTheme && styles.chatInputDark,
-                { fontSize: textSize }
-              ]}
-              placeholder="Type a message..."
-              placeholderTextColor={isDarkTheme ? "#777" : "#999"}
-              value={chatMessage}
-              onChangeText={setChatMessage}
-              multiline={false}
-              maxLength={500}
-              returnKeyType="send"
-              onSubmitEditing={handleSendMessage}
-              color={isDarkTheme ? "#FFFFFF" : "#000000"}
-            />
-            <TouchableOpacity 
-              style={[
-                styles.sendButton,
-                isDarkTheme && styles.sendButtonDark,
-                !chatMessage.trim() && styles.sendButtonDisabled,
-                !chatMessage.trim() && isDarkTheme && styles.sendButtonDisabledDark,
-                { width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }
-              ]} 
-              onPress={handleSendMessage}
-              disabled={!chatMessage.trim()}
-            >
-              <FontAwesome 
-                name="paper-plane" 
-                size={buttonSize * 0.45} 
-                color={!chatMessage.trim() 
-                  ? (isDarkTheme ? "#555" : "#CCC") 
-                  : (isDarkTheme ? "#FFFFFF" : "#FFFFFF")} 
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    );
-  };
-
-  return (
-    <Animated.View style={[styles.container, containerStyle]}>
-      <SafeAreaView style={styles.safeArea}>
-        {/* Theme toggle button */}
+  // Render header component
+  const renderHeader = () => (
+    <View style={[
+      styles.header, 
+      isDarkTheme && styles.headerDark
+    ]}>
+      {!isLargeScreen && (
         <TouchableOpacity 
-          style={[
-            styles.themeToggle, 
-            isDarkTheme && styles.themeToggleDark,
-            { width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }
-          ]}
-          onPress={toggleTheme}
+          style={styles.headerButton}
+          onPress={toggleSidebar}
         >
           <FontAwesome 
-            name={isDarkTheme ? "sun-o" : "moon-o"} 
-            size={buttonSize * 0.5} 
+            name="bars" 
+            size={iconSize} 
             color={isDarkTheme ? "#FFFFFF" : "#000000"} 
           />
         </TouchableOpacity>
+      )}
+      
+      <Text style={[
+        styles.headerTitle, 
+        isDarkTheme && styles.textLight,
+        { fontSize: titleSize * 0.9 }
+      ]}>
+        Eve Your Therapist on the Go
+      </Text>
+      
+      <TouchableOpacity 
+        style={styles.headerButton}
+        onPress={toggleTheme}
+      >
+        <FontAwesome 
+          name={isDarkTheme ? "sun-o" : "moon-o"} 
+          size={iconSize} 
+          color={isDarkTheme ? "#FFFFFF" : "#000000"} 
+        />
+      </TouchableOpacity>
+    </View>
+  );
+
+  // Render the conversation view (historic conversations)
+  const renderConversationView = () => (
+    <View style={styles.conversationContainer}>
+      <View style={[styles.conversationHeader, isDarkTheme && styles.conversationHeaderDark]}>
+        <TouchableOpacity 
+          onPress={() => handleNavigate('dashboard')}
+          style={styles.backButton}
+        >
+          <FontAwesome name="arrow-left" size={iconSize} color={isDarkTheme ? "#FFFFFF" : "#000000"} />
+        </TouchableOpacity>
+        <Text style={[
+          styles.conversationTitle, 
+          isDarkTheme && styles.textLight,
+          { fontSize: titleSize * 0.8 }
+        ]}>
+          Conversation #{currentConversationId}
+        </Text>
+      </View>
+      <View style={styles.messageContainer}>
+        <Text style={[
+          styles.messageText, 
+          isDarkTheme && styles.textLight,
+          { fontSize: textSize }
+        ]}>
+          This is where the conversation content would appear.
+        </Text>
+      </View>
+    </View>
+  );
+
+  // Render the chat dashboard view
+  const renderChatDashboard = () => (
+    <KeyboardAvoidingView 
+      style={[
+        styles.dashboardContainer,
+        isDarkTheme && { backgroundColor: '#1A1A1A' }
+      ]}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+    >
+      {/* Messages container - scrollable area for chat */}
+      <ScrollView
+        style={styles.messagesContainer}
+        contentContainerStyle={styles.messagesContent}
+        ref={scrollViewRef}
+      >
+        {messages.map(message => (
+          <View 
+            key={message.id} 
+            style={[
+              styles.messageBubble,
+              message.sender === 'user' ? styles.userBubble : styles.aiBubble,
+              message.sender === 'user' 
+                ? (isDarkTheme ? styles.userBubbleDark : {}) 
+                : (isDarkTheme ? styles.aiBubbleDark : {})
+            ]}
+          >
+            <Text style={[
+              styles.messageText,
+              message.sender === 'user' ? styles.userMessageText : styles.aiMessageText,
+              message.sender === 'ai' && isDarkTheme && styles.aiMessageTextDark,
+              { fontSize: textSize }
+            ]}>
+              {message.text}
+            </Text>
+          </View>
+        ))}
         
-        {/* Sidebar overlay - shown when sidebar is visible on mobile */}
-        {!isLargeScreen && isSidebarVisible && (
-          <TouchableOpacity
-            style={styles.sidebarOverlay}
-            activeOpacity={1}
-            onPress={toggleSidebar}
-          />
+        {/* Typing indicator */}
+        {isTyping && (
+          <View style={[
+            styles.messageBubble, 
+            styles.aiBubble,
+            isDarkTheme && styles.aiBubbleDark,
+            styles.typingBubble
+          ]}>
+            <Text style={[
+              styles.typingText,
+              isDarkTheme && styles.typingTextDark,
+              { fontSize: textSize * 0.85 }
+            ]}>
+              Eve is typing
+              <Text style={styles.typingDots}>...</Text>
+            </Text>
+          </View>
         )}
-        
-        {/* Sidebar with animation */}
-        <Animated.View style={sidebarStyle}>
-          <Sidebar 
-            onSelectConversation={handleSelectConversation}
-            currentConversationId={currentConversationId}
-            isDarkTheme={isDarkTheme}
+      </ScrollView>
+      
+      {/* Welcome message - shown when no conversation yet */}
+      {messages.length === 0 && (
+        <View style={styles.welcomeContainer}>
+          <Text style={[
+            styles.welcomeTitle, 
+            isDarkTheme && styles.textLight,
+            { fontSize: titleSize }
+          ]}>
+            How can I help you today?
+          </Text>
+          
+          <Text style={[
+            styles.welcomeSubtitle, 
+            isDarkTheme && styles.textLightSecondary,
+            { fontSize: textSize }
+          ]}>
+            Type a message to begin your conversation
+          </Text>
+        </View>
+      )}
+      
+      {/* Chat input area at the bottom */}
+      <View style={styles.chatInputWrapper}>
+        <View 
+          style={[
+            styles.chatInputContainer,
+            isDarkTheme && styles.chatInputContainerDark,
+            { height: Math.max(buttonSize + 10, 50) }
+          ]}
+        >
+          {/* Microphone button (inside the input) */}
+          <Animated.View style={micButtonAnimStyle}>
+            <TouchableOpacity 
+              onPress={handleMicPress}
+              style={[
+                styles.micButton, 
+                isDarkTheme && styles.micButtonDark,
+                isRecording && styles.micButtonRecording,
+                { width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }
+              ]}
+            >
+              <FontAwesome 
+                name={isRecording ? "stop-circle" : "microphone"} 
+                size={buttonSize * 0.5} 
+                color={isRecording 
+                  ? "#FF4136" 
+                  : (isDarkTheme ? "#FFFFFF" : "#000000")} 
+              />
+            </TouchableOpacity>
+          </Animated.View>
+
+          <TextInput
+            ref={inputRef}
+            style={[
+              styles.chatInput,
+              isDarkTheme && styles.chatInputDark,
+              { fontSize: textSize }
+            ]}
+            placeholder="Type a message..."
+            placeholderTextColor={isDarkTheme ? "#777" : "#999"}
+            value={chatMessage}
+            onChangeText={setChatMessage}
+            multiline={false}
+            maxLength={500}
+            returnKeyType="send"
+            onSubmitEditing={handleSendMessage}
+            color={isDarkTheme ? "#FFFFFF" : "#000000"}
           />
-        </Animated.View>
+          <TouchableOpacity 
+            style={[
+              styles.sendButton,
+              isDarkTheme && styles.sendButtonDark,
+              !chatMessage.trim() && styles.sendButtonDisabled,
+              !chatMessage.trim() && isDarkTheme && styles.sendButtonDisabledDark,
+              { width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }
+            ]} 
+            onPress={handleSendMessage}
+            disabled={!chatMessage.trim()}
+          >
+            <FontAwesome 
+              name="paper-plane" 
+              size={buttonSize * 0.45} 
+              color={!chatMessage.trim() 
+                ? (isDarkTheme ? "#555" : "#CCC") 
+                : (isDarkTheme ? "#FFFFFF" : "#FFFFFF")} 
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
+  );
+
+  return (
+    <Animated.View style={[styles.container, containerStyle]}>
+      <StatusBar 
+        barStyle={isDarkTheme ? "light-content" : "dark-content"} 
+        backgroundColor={isDarkTheme ? "#121212" : "#FFFFFF"}
+      />
+      
+      {/* Main app structure */}
+      <View style={styles.appLayout}>
+        {/* Header Section - Always visible */}
+        {renderHeader()}
         
-        {/* Main content with animation */}
-        <Animated.View style={contentStyle}>
-          {renderMainContent()}
-        </Animated.View>
-      </SafeAreaView>
+        {/* Main Content Area */}
+        <View style={styles.mainContainer}>
+          {/* Sidebar overlay - shown when sidebar is visible on mobile */}
+          {!isLargeScreen && isSidebarVisible && (
+            <TouchableOpacity
+              style={styles.sidebarOverlay}
+              activeOpacity={1}
+              onPress={toggleSidebar}
+            />
+          )}
+          
+          {/* Sidebar with animation */}
+          <Animated.View style={sidebarStyle}>
+            <Sidebar 
+              onSelectConversation={handleSelectConversation}
+              currentConversationId={currentConversationId}
+              isDarkTheme={isDarkTheme}
+            />
+          </Animated.View>
+          
+          {/* Main content area */}
+          <Animated.View style={contentStyle}>
+            {activeView === 'conversation' && currentConversationId 
+              ? renderConversationView() 
+              : renderChatDashboard()
+            }
+          </Animated.View>
+        </View>
+      </View>
     </Animated.View>
   );
 }
@@ -608,9 +632,42 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  safeArea: {
+  appLayout: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  mainContainer: {
     flex: 1,
     flexDirection: 'row',
+    position: 'relative',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    backgroundColor: '#FFFFFF',
+    zIndex: 10,
+  },
+  headerDark: {
+    backgroundColor: '#1A1A1A',
+    borderBottomColor: '#333',
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+  },
+  headerTitle: {
+    fontWeight: 'bold',
+    flex: 1,
+    textAlign: 'center',
   },
   sidebarOverlay: {
     position: 'absolute',
@@ -621,79 +678,51 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     zIndex: 50,
   },
-  mainContent: {
+  dashboardContainer: {
+    flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    width: '100%',
+    backgroundColor: '#F8F8F8',
+  },
+  welcomeContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  dashboardContainer: {
-    flex: 1,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    position: 'relative',
-    width: '100%',
-    paddingTop: Platform.OS === 'web' ? 20 : 40,
-  },
-  sidebarToggle: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    zIndex: 10,
-    padding: 10,
-    borderRadius: 20,
-    backgroundColor: 'rgba(200, 200, 200, 0.3)',
-  },
-  sidebarToggleDark: {
-    backgroundColor: 'rgba(60, 60, 60, 0.5)',
-  },
-  title: {
+  welcomeTitle: {
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 15,
     textAlign: 'center',
-    paddingHorizontal: 40,
   },
-  titleSmall: {
-    marginBottom: 10,
-  },
-  micContainer: {
-    marginBottom: 5,
-  },
-  circle: {
-    borderRadius: 999,
-    backgroundColor: 'black',
-    position: 'absolute',
-    zIndex: -1,
-  },
-  circleDark: {
-    backgroundColor: '#4682b4',
+  welcomeSubtitle: {
+    textAlign: 'center',
+    color: '#666',
+    maxWidth: 250,
   },
   textLight: {
     color: '#FFFFFF',
   },
-  themeToggle: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    zIndex: 101, // Above sidebar
-    padding: 10,
-    borderRadius: 20,
-    backgroundColor: 'rgba(200, 200, 200, 0.3)',
-  },
-  themeToggleDark: {
-    backgroundColor: 'rgba(60, 60, 60, 0.5)',
+  textLightSecondary: {
+    color: '#AAAAAA',
   },
   conversationContainer: {
     flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
     width: '100%',
-    padding: 20,
   },
   conversationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 15,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
-    marginBottom: 20,
+  },
+  conversationHeaderDark: {
+    borderBottomColor: '#333',
   },
   backButton: {
     padding: 10,
@@ -706,20 +735,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   // Message display styles
   messagesContainer: {
     flex: 1,
     width: '100%',
-    paddingHorizontal: 20,
-  },
-  emptyMessagesContainer: {
-    opacity: 0, // Hide when no messages, but keep layout
   },
   messagesContent: {
     flexGrow: 1,
     justifyContent: 'flex-end',
-    paddingVertical: 20,
+    padding: 20,
   },
   messageBubble: {
     maxWidth: '80%',
@@ -771,56 +797,36 @@ const styles = StyleSheet.create({
   // Chat input styles
   chatInputWrapper: {
     width: '100%',
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    marginBottom: Platform.OS === 'ios' ? 30 : 20,
-    marginTop: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    backgroundColor: '#FFFFFF',
   },
   chatInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F5F5F5',
-    borderRadius: 25,
+    borderRadius: 24,
     paddingHorizontal: 12,
-    paddingVertical: 5,
-    width: '95%',
-    maxWidth: 600,
+    paddingVertical: 4,
+    width: '100%',
     borderWidth: 1,
     borderColor: '#E0E0E0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-    transform: [{scale: 0.98}],
-    opacity: 0.9,
+    shadowRadius: 2,
+    elevation: 2,
   },
   chatInputContainerDark: {
     backgroundColor: '#2A2A2A',
     borderColor: '#444',
   },
-  chatInputActive: {
-    transform: [{scale: 1}],
-    opacity: 1,
-  },
-  // New microphone button styles
-  micButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-  },
-  micButtonDark: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  micButtonRecording: {
-    backgroundColor: 'rgba(255, 65, 54, 0.1)',
-  },
   chatInput: {
     flex: 1,
-    paddingVertical: 10,
-    paddingRight: 10,
-    paddingLeft: 5,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
     minHeight: 40,
   },
   chatInputDark: {
@@ -839,5 +845,18 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabledDark: {
     backgroundColor: '#444',
+  },
+  // Microphone button styles
+  micButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  micButtonDark: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  micButtonRecording: {
+    backgroundColor: 'rgba(255, 65, 54, 0.1)',
   },
 }); 
