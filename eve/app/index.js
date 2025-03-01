@@ -24,6 +24,7 @@ import Animated, {
   withSequence 
 } from "react-native-reanimated";
 import Sidebar from './components/Sidebar';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Responsive sizing based on screen size
 const getResponsiveStyles = (width, height) => {
@@ -646,49 +647,51 @@ export default function Index() {
   };
 
   return (
-    <SafeAreaView style={styles.safeAreaContainer}>
-      <Animated.View style={[styles.container, containerStyle]}>
-        <StatusBar 
-          barStyle={isDarkTheme ? "light-content" : "dark-content"} 
-          backgroundColor={isDarkTheme ? COLORS.dark.background : COLORS.light.background}
-        />
-        
-        {/* Main app structure */}
-        <View style={styles.appLayout}>
-          {/* Header Section - Always visible */}
-          {renderHeader()}
+    <AuthProvider>
+      <SafeAreaView style={styles.safeAreaContainer}>
+        <Animated.View style={[styles.container, containerStyle]}>
+          <StatusBar 
+            barStyle={isDarkTheme ? "light-content" : "dark-content"} 
+            backgroundColor={isDarkTheme ? COLORS.dark.background : COLORS.light.background}
+          />
           
-          {/* Main Content Area */}
-          <View style={styles.mainContainer}>
-            {/* Sidebar overlay - shown when sidebar is visible on mobile */}
-            {!isLargeScreen && isSidebarVisible && (
-              <TouchableOpacity
-                style={styles.sidebarOverlay}
-                activeOpacity={1}
-                onPress={toggleSidebar}
-              />
-            )}
+          {/* Main app structure */}
+          <View style={styles.appLayout}>
+            {/* Header Section - Always visible */}
+            {renderHeader()}
             
-            {/* Sidebar with animation */}
-            <Animated.View style={sidebarStyle}>
-              <Sidebar 
-                onSelectConversation={handleSelectConversation}
-                currentConversationId={currentConversationId}
-                isDarkTheme={isDarkTheme}
-              />
-            </Animated.View>
-            
-            {/* Main content area */}
-            <Animated.View style={contentStyle}>
-              {activeView === 'conversation' && currentConversationId 
-                ? renderConversationView() 
-                : renderChatDashboard()
-              }
-            </Animated.View>
+            {/* Main Content Area */}
+            <View style={styles.mainContainer}>
+              {/* Sidebar overlay - shown when sidebar is visible on mobile */}
+              {!isLargeScreen && isSidebarVisible && (
+                <TouchableOpacity
+                  style={styles.sidebarOverlay}
+                  activeOpacity={1}
+                  onPress={toggleSidebar}
+                />
+              )}
+              
+              {/* Sidebar with animation */}
+              <Animated.View style={sidebarStyle}>
+                <Sidebar 
+                  onSelectConversation={handleSelectConversation}
+                  currentConversationId={currentConversationId}
+                  isDarkTheme={isDarkTheme}
+                />
+              </Animated.View>
+              
+              {/* Main content area */}
+              <Animated.View style={contentStyle}>
+                {activeView === 'conversation' && currentConversationId 
+                  ? renderConversationView() 
+                  : renderChatDashboard()
+                }
+              </Animated.View>
+            </View>
           </View>
-        </View>
-      </Animated.View>
-    </SafeAreaView>
+        </Animated.View>
+      </SafeAreaView>
+    </AuthProvider>
   );
 }
 
