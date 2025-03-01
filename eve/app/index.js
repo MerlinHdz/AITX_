@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Text, View, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView } from "react-native";
+import React, { useState, useEffect, useRef } from 'react';
+import { Text, View, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView, TextInput, Keyboard } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import Animated, { 
   useSharedValue, 
@@ -18,6 +18,8 @@ export default function Index() {
   const circleScale = useSharedValue(0);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [activeView, setActiveView] = useState('dashboard');
+  const [chatMessage, setChatMessage] = useState('');
+  const inputRef = useRef(null);
   
   // Animation values for smooth transitions
   const contentOpacity = useSharedValue(1);
@@ -80,6 +82,13 @@ export default function Index() {
   const startAnimation = () => {
     micOpacity.value = withTiming(0, { duration: 500 });
     circleScale.value = withTiming(1, { duration: 600 });
+    
+    // Focus the chat input after animation
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 700);
   };
   
   const toggleTheme = () => {
@@ -122,6 +131,18 @@ export default function Index() {
       sidebarScale.value = withTiming(1, { duration: 300 });
     }, 200);
   };
+  
+  const handleSendMessage = () => {
+    if (!chatMessage.trim()) return;
+    
+    console.log('Sending message:', chatMessage);
+    // Here you would typically send the message to your backend
+    // And then potentially navigate to the conversation view
+    
+    // For now, just clear the input
+    setChatMessage('');
+    Keyboard.dismiss();
+  };
 
   // Render the appropriate view based on active view state
   const renderMainContent = () => {
@@ -161,6 +182,52 @@ export default function Index() {
         </Animated.View>
 
         <Animated.View style={[styles.circle, circleStyle, isDarkTheme && styles.circleDark]} />
+        
+        {/* Chat input area at the bottom */}
+        <View style={styles.chatInputWrapper}>
+          <View 
+            style={[
+              styles.chatInputContainer,
+              isDarkTheme && styles.chatInputContainerDark,
+              micOpacity.value === 0 && styles.chatInputActive
+            ]}
+          >
+            <TextInput
+              ref={inputRef}
+              style={[
+                styles.chatInput,
+                isDarkTheme && styles.chatInputDark
+              ]}
+              placeholder="Type a message..."
+              placeholderTextColor={isDarkTheme ? "#777" : "#999"}
+              value={chatMessage}
+              onChangeText={setChatMessage}
+              multiline={false}
+              maxLength={500}
+              returnKeyType="send"
+              onSubmitEditing={handleSendMessage}
+              color={isDarkTheme ? "#FFFFFF" : "#000000"}
+            />
+            <TouchableOpacity 
+              style={[
+                styles.sendButton,
+                isDarkTheme && styles.sendButtonDark,
+                !chatMessage.trim() && styles.sendButtonDisabled,
+                !chatMessage.trim() && isDarkTheme && styles.sendButtonDisabledDark
+              ]} 
+              onPress={handleSendMessage}
+              disabled={!chatMessage.trim()}
+            >
+              <FontAwesome 
+                name="paper-plane" 
+                size={16} 
+                color={!chatMessage.trim() 
+                  ? (isDarkTheme ? "#555" : "#CCC") 
+                  : (isDarkTheme ? "#FFFFFF" : "#FFFFFF")} 
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
     );
   };
@@ -219,6 +286,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
+    width: '100%',
   },
   title: {
     fontSize: 18,
@@ -277,5 +346,66 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 16,
+  },
+  // New styles for chat input
+  chatInputWrapper: {
+    position: 'absolute',
+    bottom: 30,
+    width: '100%',
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  chatInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 25,
+    paddingHorizontal: 15,
+    paddingVertical: 5,
+    width: '90%',
+    maxWidth: 500,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+    transform: [{scale: 0.9}],
+    opacity: 0.7,
+  },
+  chatInputContainerDark: {
+    backgroundColor: '#2A2A2A',
+    borderColor: '#444',
+  },
+  chatInputActive: {
+    transform: [{scale: 1}],
+    opacity: 1,
+  },
+  chatInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 10,
+    paddingRight: 10,
+  },
+  chatInputDark: {
+    color: '#FFFFFF',
+  },
+  sendButton: {
+    backgroundColor: '#000000',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendButtonDark: {
+    backgroundColor: '#4682b4',
+  },
+  sendButtonDisabled: {
+    backgroundColor: '#E0E0E0',
+  },
+  sendButtonDisabledDark: {
+    backgroundColor: '#444',
   },
 }); 
