@@ -21,6 +21,10 @@ export default function Index() {
     circleScale.value = withTiming(1, { duration: 600 }); // Círculo crece
   };
 
+
+
+  
+
   return (
     <View style={styles.container}>
       <Text>Eve Your Therapist on the Go</Text>
@@ -50,7 +54,7 @@ const styles = StyleSheet.create({
   circle: {
     width: 200,
     height: 200,
-    borderRadius: 50,
+    borderRadius: 150,
     backgroundColor: 'black',
   },
 }); 
