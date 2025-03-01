@@ -23,7 +23,7 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
-      <Text>Hello World</Text>
+      <Text>Eve Your Therapist on the Go</Text>
 
       {/* Micrófono con animación */}
       <Animated.View style={[micStyle, styles.micContainer]}>
@@ -45,12 +45,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   micContainer: {
-    marginBottom: 20,
+    marginBottom: 5,
   },
   circle: {
-    width: 100,
-    height: 100,
+    width: 200,
+    height: 200,
     borderRadius: 50,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'black',
   },
 }); 
