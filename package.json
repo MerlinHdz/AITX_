@@ -1,0 +1,12 @@
+{
+  "name": "aitx-root",
+  "version": "1.0.0",
+  "description": "Root package for AITX project",
+  "scripts": {
+    "start": "cd eve && npm start",
+    "ios": "cd eve && npm run ios",
+    "android": "cd eve && npm run android",
+    "web": "cd eve && npm run web"
+  },
+  "private": true
+} 
