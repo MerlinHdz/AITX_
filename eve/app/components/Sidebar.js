@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,12 @@ import {
   StyleSheet,
   Dimensions,
   Image,
-  Platform
+  Platform,
+  Modal,
+  ActivityIndicator,
+  Switch,
+  Alert,
+  KeyboardAvoidingView
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { LineChart } from 'react-native-chart-kit';
@@ -85,9 +90,39 @@ const Sidebar = ({
   // State for user menu
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   
+  // State for modals
+  const [isSignInModalVisible, setIsSignInModalVisible] = useState(false);
+  const [isSignUpModalVisible, setIsSignUpModalVisible] = useState(false);
+  const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Sign in form state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [signInError, setSignInError] = useState('');
+  
+  // Sign up form state
+  const [signUpName, setSignUpName] = useState('');
+  const [signUpEmail, setSignUpEmail] = useState('');
+  const [signUpPassword, setSignUpPassword] = useState('');
+  const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
+  const [signUpError, setSignUpError] = useState('');
+  
+  // User settings state
+  const [userSettings, setUserSettings] = useState({
+    ageRange: '',
+    occupation: '',
+    sleepPattern: '',
+    stressLevel: '',
+    therapyGoals: '',
+    shareMoodLogs: false,
+    allowAIAnalysis: false,
+    shareDemographics: false
+  });
+  
   // Mock user data
   const [user, setUser] = useState({
-    isLoggedIn: true,
+    isLoggedIn: false, // Changed to false by default
     name: "John Doe",
     avatar: "https://via.placeholder.com/60"
   });
@@ -303,8 +338,163 @@ const Sidebar = ({
   
   // Handle login
   const handleLogin = () => {
-    // This would navigate to a login screen in a real app
-    setUser({...user, isLoggedIn: true});
+    // For real app, navigate to login screen or open modal
+    setIsSignInModalVisible(true);
+  };
+  
+  // Open sign up modal
+  const openSignUp = () => {
+    setIsSignInModalVisible(false);
+    setIsSignUpModalVisible(true);
+  };
+  
+  // Open sign in modal
+  const openSignIn = () => {
+    setIsSignUpModalVisible(false);
+    setIsSignInModalVisible(true);
+  };
+  
+  // Handle sign in submission
+  const handleSignInSubmit = () => {
+    // Reset error state
+    setSignInError('');
+    
+    // Validate inputs
+    if (!email.trim()) {
+      setSignInError('Email is required');
+      return;
+    }
+    
+    if (!password.trim()) {
+      setSignInError('Password is required');
+      return;
+    }
+    
+    // Simple email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setSignInError('Please enter a valid email address');
+      return;
+    }
+    
+    // Show loading indicator
+    setIsLoading(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      setIsLoading(false);
+      
+      // Mock successful login for demo purposes
+      // In a real app, this would be an API call
+      if (email === 'demo@example.com' && password === 'password') {
+        setUser({
+          isLoggedIn: true,
+          name: email.split('@')[0], // Use part of email as name
+          avatar: "https://via.placeholder.com/60"
+        });
+        setIsSignInModalVisible(false);
+        // Reset form
+        setEmail('');
+        setPassword('');
+      } else {
+        setSignInError('Invalid email or password');
+      }
+    }, 1500);
+  };
+  
+  // Handle sign up submission
+  const handleSignUpSubmit = () => {
+    // Reset error state
+    setSignUpError('');
+    
+    // Validate inputs
+    if (!signUpName.trim()) {
+      setSignUpError('Name is required');
+      return;
+    }
+    
+    if (!signUpEmail.trim()) {
+      setSignUpError('Email is required');
+      return;
+    }
+    
+    // Simple email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(signUpEmail)) {
+      setSignUpError('Please enter a valid email address');
+      return;
+    }
+    
+    if (!signUpPassword.trim()) {
+      setSignUpError('Password is required');
+      return;
+    }
+    
+    if (signUpPassword.length < 6) {
+      setSignUpError('Password must be at least 6 characters long');
+      return;
+    }
+    
+    if (signUpPassword !== signUpConfirmPassword) {
+      setSignUpError('Passwords do not match');
+      return;
+    }
+    
+    // Show loading indicator
+    setIsLoading(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      setIsLoading(false);
+      
+      // Mock successful registration
+      // In a real app, this would be an API call to create the user
+      setUser({
+        isLoggedIn: true,
+        name: signUpName,
+        avatar: "https://via.placeholder.com/60"
+      });
+      
+      // Close modal
+      setIsSignUpModalVisible(false);
+      
+      // Reset form
+      setSignUpName('');
+      setSignUpEmail('');
+      setSignUpPassword('');
+      setSignUpConfirmPassword('');
+      
+      // Show success message
+      Alert.alert(
+        "Account Created",
+        "Your account has been created successfully!",
+        [{ text: "OK" }]
+      );
+    }, 2000);
+  };
+  
+  // Open settings modal
+  const openSettings = () => {
+    setIsSettingsModalVisible(true);
+    setIsUserMenuOpen(false);
+  };
+  
+  // Handle settings save
+  const handleSettingsSave = () => {
+    setIsLoading(true);
+    
+    // Simulate API call to save settings
+    setTimeout(() => {
+      setIsLoading(false);
+      setIsSettingsModalVisible(false);
+      
+      // Show success message
+      Alert.alert(
+        "Settings Saved",
+        "Your preferences have been updated successfully.",
+        [{ text: "OK" }]
+      );
+    }, 1000);
   };
   
   // Render user section
@@ -381,10 +571,7 @@ const Sidebar = ({
             ]}>
               <TouchableOpacity 
                 style={styles.userMenuItem}
-                onPress={() => {
-                  console.log('Account settings');
-                  setIsUserMenuOpen(false);
-                }}
+                onPress={openSettings}
               >
                 <FontAwesome 
                   name="cog" 
@@ -541,6 +728,616 @@ const Sidebar = ({
           Your scores have improved over time, indicating that the mindfulness techniques are working well for you.
         </Text>
       </View>
+    );
+  };
+  
+  // Sign In Modal Component
+  const renderSignInModal = () => {
+    const colors = getThemeColors();
+    
+    return (
+      <Modal
+        visible={isSignInModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsSignInModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity 
+            style={styles.modalBackground}
+            activeOpacity={1}
+            onPress={() => setIsSignInModalVisible(false)}
+          >
+            <View 
+              style={[
+                styles.modalContainer,
+                { backgroundColor: colors.card }
+              ]}
+              onStartShouldSetResponder={() => true}
+              onTouchEnd={(e) => e.stopPropagation()}
+            >
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  Sign In
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setIsSignInModalVisible(false)}
+                  style={styles.closeButton}
+                >
+                  <FontAwesome name="times" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+              
+              {/* Form fields */}
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.text }]}>Email</Text>
+                <TextInput
+                  style={[
+                    styles.formInput,
+                    { 
+                      backgroundColor: isDarkTheme ? colors.background : '#fff',
+                      borderColor: colors.border,
+                      color: colors.text
+                    }
+                  ]}
+                  placeholder="Enter your email"
+                  placeholderTextColor={isDarkTheme ? '#888' : '#999'}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+              
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.text }]}>Password</Text>
+                <TextInput
+                  style={[
+                    styles.formInput,
+                    { 
+                      backgroundColor: isDarkTheme ? colors.background : '#fff',
+                      borderColor: colors.border,
+                      color: colors.text
+                    }
+                  ]}
+                  placeholder="Enter your password"
+                  placeholderTextColor={isDarkTheme ? '#888' : '#999'}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={true}
+                />
+                
+                <TouchableOpacity style={styles.forgotPasswordLink}>
+                  <Text style={[styles.linkText, { color: colors.primary }]}>
+                    Forgot Password?
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              
+              {/* Error message */}
+              {signInError ? (
+                <Text style={styles.errorText}>{signInError}</Text>
+              ) : null}
+              
+              {/* Sign In button */}
+              <TouchableOpacity
+                style={[
+                  styles.signInButton,
+                  { backgroundColor: colors.primary }
+                ]}
+                onPress={handleSignInSubmit}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.signInButtonText}>Sign In</Text>
+                )}
+              </TouchableOpacity>
+              
+              {/* OAuth options */}
+              <View style={styles.oauthContainer}>
+                <Text style={[styles.oauthText, { color: colors.textSecondary }]}>
+                  Or sign in with
+                </Text>
+                <View style={styles.oauthButtons}>
+                  <TouchableOpacity 
+                    style={[
+                      styles.oauthButton,
+                      { backgroundColor: isDarkTheme ? '#333' : '#f1f1f1' }
+                    ]}
+                  >
+                    <FontAwesome name="google" size={18} color="#DB4437" />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[
+                      styles.oauthButton,
+                      { backgroundColor: isDarkTheme ? '#333' : '#f1f1f1' }
+                    ]}
+                  >
+                    <FontAwesome name="facebook" size={18} color="#4267B2" />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[
+                      styles.oauthButton,
+                      { backgroundColor: isDarkTheme ? '#333' : '#f1f1f1' }
+                    ]}
+                  >
+                    <FontAwesome name="apple" size={18} color={isDarkTheme ? "#fff" : "#000"} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
+              {/* Sign up link */}
+              <View style={styles.signUpContainer}>
+                <Text style={[styles.signUpText, { color: colors.textSecondary }]}>
+                  Don't have an account?
+                </Text>
+                <TouchableOpacity onPress={openSignUp}>
+                  <Text style={[styles.signUpLink, { color: colors.primary }]}>
+                    Sign Up
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              
+              {/* Guest option */}
+              <TouchableOpacity 
+                style={styles.guestButton}
+                onPress={() => {
+                  setIsSignInModalVisible(false);
+                }}
+              >
+                <Text style={[styles.guestButtonText, { color: colors.textSecondary }]}>
+                  Continue as Guest
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
+    );
+  };
+  
+  // Sign Up Modal Component
+  const renderSignUpModal = () => {
+    const colors = getThemeColors();
+    
+    return (
+      <Modal
+        visible={isSignUpModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsSignUpModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity 
+            style={styles.modalBackground}
+            activeOpacity={1}
+            onPress={() => setIsSignUpModalVisible(false)}
+          >
+            <View 
+              style={[
+                styles.modalContainer,
+                { backgroundColor: colors.card }
+              ]}
+              onStartShouldSetResponder={() => true}
+              onTouchEnd={(e) => e.stopPropagation()}
+            >
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  Create Account
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setIsSignUpModalVisible(false)}
+                  style={styles.closeButton}
+                >
+                  <FontAwesome name="times" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+              
+              {/* Form fields */}
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.text }]}>Name</Text>
+                <TextInput
+                  style={[
+                    styles.formInput,
+                    { 
+                      backgroundColor: isDarkTheme ? colors.background : '#fff',
+                      borderColor: colors.border,
+                      color: colors.text
+                    }
+                  ]}
+                  placeholder="Enter your full name"
+                  placeholderTextColor={isDarkTheme ? '#888' : '#999'}
+                  value={signUpName}
+                  onChangeText={setSignUpName}
+                  autoCapitalize="words"
+                />
+              </View>
+              
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.text }]}>Email</Text>
+                <TextInput
+                  style={[
+                    styles.formInput,
+                    { 
+                      backgroundColor: isDarkTheme ? colors.background : '#fff',
+                      borderColor: colors.border,
+                      color: colors.text
+                    }
+                  ]}
+                  placeholder="Enter your email"
+                  placeholderTextColor={isDarkTheme ? '#888' : '#999'}
+                  value={signUpEmail}
+                  onChangeText={setSignUpEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+              
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.text }]}>Password</Text>
+                <TextInput
+                  style={[
+                    styles.formInput,
+                    { 
+                      backgroundColor: isDarkTheme ? colors.background : '#fff',
+                      borderColor: colors.border,
+                      color: colors.text
+                    }
+                  ]}
+                  placeholder="Create a password (min. 6 characters)"
+                  placeholderTextColor={isDarkTheme ? '#888' : '#999'}
+                  value={signUpPassword}
+                  onChangeText={setSignUpPassword}
+                  secureTextEntry={true}
+                />
+              </View>
+              
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.text }]}>Confirm Password</Text>
+                <TextInput
+                  style={[
+                    styles.formInput,
+                    { 
+                      backgroundColor: isDarkTheme ? colors.background : '#fff',
+                      borderColor: colors.border,
+                      color: colors.text
+                    }
+                  ]}
+                  placeholder="Confirm your password"
+                  placeholderTextColor={isDarkTheme ? '#888' : '#999'}
+                  value={signUpConfirmPassword}
+                  onChangeText={setSignUpConfirmPassword}
+                  secureTextEntry={true}
+                />
+              </View>
+              
+              {/* Error message */}
+              {signUpError ? (
+                <Text style={styles.errorText}>{signUpError}</Text>
+              ) : null}
+              
+              {/* Privacy policy acceptance */}
+              <View style={styles.privacyContainer}>
+                <Text style={[styles.privacyText, { color: colors.textSecondary }]}>
+                  By creating an account, you agree to our{' '}
+                  <Text style={[styles.privacyLink, { color: colors.primary }]}>
+                    Terms of Service
+                  </Text>
+                  {' '}and{' '}
+                  <Text style={[styles.privacyLink, { color: colors.primary }]}>
+                    Privacy Policy
+                  </Text>
+                </Text>
+              </View>
+              
+              {/* Sign Up button */}
+              <TouchableOpacity
+                style={[
+                  styles.signInButton,
+                  { backgroundColor: colors.primary }
+                ]}
+                onPress={handleSignUpSubmit}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.signInButtonText}>Create Account</Text>
+                )}
+              </TouchableOpacity>
+              
+              {/* OAuth options */}
+              <View style={styles.oauthContainer}>
+                <Text style={[styles.oauthText, { color: colors.textSecondary }]}>
+                  Or sign up with
+                </Text>
+                <View style={styles.oauthButtons}>
+                  <TouchableOpacity 
+                    style={[
+                      styles.oauthButton,
+                      { backgroundColor: isDarkTheme ? '#333' : '#f1f1f1' }
+                    ]}
+                  >
+                    <FontAwesome name="google" size={18} color="#DB4437" />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[
+                      styles.oauthButton,
+                      { backgroundColor: isDarkTheme ? '#333' : '#f1f1f1' }
+                    ]}
+                  >
+                    <FontAwesome name="facebook" size={18} color="#4267B2" />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[
+                      styles.oauthButton,
+                      { backgroundColor: isDarkTheme ? '#333' : '#f1f1f1' }
+                    ]}
+                  >
+                    <FontAwesome name="apple" size={18} color={isDarkTheme ? "#fff" : "#000"} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
+              {/* Sign in link */}
+              <View style={styles.signUpContainer}>
+                <Text style={[styles.signUpText, { color: colors.textSecondary }]}>
+                  Already have an account?
+                </Text>
+                <TouchableOpacity onPress={openSignIn}>
+                  <Text style={[styles.signUpLink, { color: colors.primary }]}>
+                    Sign In
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
+    );
+  };
+  
+  // User Settings Modal Component
+  const renderSettingsModal = () => {
+    const colors = getThemeColors();
+    
+    return (
+      <Modal
+        visible={isSettingsModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsSettingsModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity 
+            style={styles.modalBackground}
+            activeOpacity={1}
+            onPress={() => setIsSettingsModalVisible(false)}
+          >
+            <View 
+              style={[
+                styles.modalContainer,
+                styles.settingsContainer,
+                { backgroundColor: colors.card }
+              ]}
+              onStartShouldSetResponder={() => true}
+              onTouchEnd={(e) => e.stopPropagation()}
+            >
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  Account Settings
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setIsSettingsModalVisible(false)}
+                  style={styles.closeButton}
+                >
+                  <FontAwesome name="times" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView style={styles.settingsScrollView}>
+                <Text style={[styles.sectionHeader, { color: colors.text }]}>
+                  Personal Information
+                </Text>
+                <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>
+                  The following information is optional and helps us personalize your experience. 
+                  You can share as much or as little as you're comfortable with.
+                </Text>
+                
+                {/* Personal Info Fields */}
+                <View style={styles.formGroup}>
+                  <Text style={[styles.formLabel, { color: colors.text }]}>Age Range</Text>
+                  <TextInput
+                    style={[
+                      styles.formInput,
+                      { 
+                        backgroundColor: isDarkTheme ? colors.background : '#fff',
+                        borderColor: colors.border,
+                        color: colors.text
+                      }
+                    ]}
+                    placeholder="e.g., 25-34"
+                    placeholderTextColor={isDarkTheme ? '#888' : '#999'}
+                    value={userSettings.ageRange}
+                    onChangeText={(text) => setUserSettings({...userSettings, ageRange: text})}
+                  />
+                </View>
+                
+                <View style={styles.formGroup}>
+                  <Text style={[styles.formLabel, { color: colors.text }]}>Occupation</Text>
+                  <TextInput
+                    style={[
+                      styles.formInput,
+                      { 
+                        backgroundColor: isDarkTheme ? colors.background : '#fff',
+                        borderColor: colors.border,
+                        color: colors.text
+                      }
+                    ]}
+                    placeholder="e.g., Designer, Teacher"
+                    placeholderTextColor={isDarkTheme ? '#888' : '#999'}
+                    value={userSettings.occupation}
+                    onChangeText={(text) => setUserSettings({...userSettings, occupation: text})}
+                  />
+                </View>
+                
+                <Text style={[styles.sectionHeader, { color: colors.text, marginTop: 20 }]}>
+                  Lifestyle Information
+                </Text>
+                
+                <View style={styles.formGroup}>
+                  <Text style={[styles.formLabel, { color: colors.text }]}>Sleep Patterns</Text>
+                  <TextInput
+                    style={[
+                      styles.formInput,
+                      { 
+                        backgroundColor: isDarkTheme ? colors.background : '#fff',
+                        borderColor: colors.border,
+                        color: colors.text
+                      }
+                    ]}
+                    placeholder="e.g., 6-8 hours, Irregular"
+                    placeholderTextColor={isDarkTheme ? '#888' : '#999'}
+                    value={userSettings.sleepPattern}
+                    onChangeText={(text) => setUserSettings({...userSettings, sleepPattern: text})}
+                  />
+                </View>
+                
+                <View style={styles.formGroup}>
+                  <Text style={[styles.formLabel, { color: colors.text }]}>Stress Levels</Text>
+                  <TextInput
+                    style={[
+                      styles.formInput,
+                      { 
+                        backgroundColor: isDarkTheme ? colors.background : '#fff',
+                        borderColor: colors.border,
+                        color: colors.text
+                      }
+                    ]}
+                    placeholder="e.g., Moderate, High"
+                    placeholderTextColor={isDarkTheme ? '#888' : '#999'}
+                    value={userSettings.stressLevel}
+                    onChangeText={(text) => setUserSettings({...userSettings, stressLevel: text})}
+                  />
+                </View>
+                
+                <View style={styles.formGroup}>
+                  <Text style={[styles.formLabel, { color: colors.text }]}>Therapy Goals</Text>
+                  <TextInput
+                    style={[
+                      styles.formInput,
+                      { 
+                        backgroundColor: isDarkTheme ? colors.background : '#fff',
+                        borderColor: colors.border,
+                        color: colors.text,
+                        height: 80
+                      }
+                    ]}
+                    placeholder="What would you like to achieve through therapy?"
+                    placeholderTextColor={isDarkTheme ? '#888' : '#999'}
+                    value={userSettings.therapyGoals}
+                    onChangeText={(text) => setUserSettings({...userSettings, therapyGoals: text})}
+                    multiline
+                    textAlignVertical="top"
+                  />
+                </View>
+                
+                <Text style={[styles.sectionHeader, { color: colors.text, marginTop: 20 }]}>
+                  Privacy Settings
+                </Text>
+                <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>
+                  Control how your information is used to enhance your therapy experience.
+                  You can adjust these permissions at any time.
+                </Text>
+                
+                {/* Toggle Switches */}
+                <View style={styles.toggleRow}>
+                  <View style={styles.toggleInfo}>
+                    <Text style={[styles.toggleLabel, { color: colors.text }]}>
+                      Share mood logs with the therapist
+                    </Text>
+                    <Text style={[styles.toggleDescription, { color: colors.textSecondary }]}>
+                      Allows the therapist to view your daily mood logs
+                    </Text>
+                  </View>
+                  <Switch
+                    value={userSettings.shareMoodLogs}
+                    onValueChange={(value) => setUserSettings({...userSettings, shareMoodLogs: value})}
+                    trackColor={{ false: "#767577", true: colors.primary }}
+                    thumbColor="#f4f3f4"
+                  />
+                </View>
+                
+                <View style={styles.toggleRow}>
+                  <View style={styles.toggleInfo}>
+                    <Text style={[styles.toggleLabel, { color: colors.text }]}>
+                      Allow AI to analyze conversation history
+                    </Text>
+                    <Text style={[styles.toggleDescription, { color: colors.textSecondary }]}>
+                      Enables AI to provide personalized insights based on your conversations
+                    </Text>
+                  </View>
+                  <Switch
+                    value={userSettings.allowAIAnalysis}
+                    onValueChange={(value) => setUserSettings({...userSettings, allowAIAnalysis: value})}
+                    trackColor={{ false: "#767577", true: colors.primary }}
+                    thumbColor="#f4f3f4"
+                  />
+                </View>
+                
+                <View style={styles.toggleRow}>
+                  <View style={styles.toggleInfo}>
+                    <Text style={[styles.toggleLabel, { color: colors.text }]}>
+                      Share demographic information
+                    </Text>
+                    <Text style={[styles.toggleDescription, { color: colors.textSecondary }]}>
+                      Allows the therapist to see your age range and occupation
+                    </Text>
+                  </View>
+                  <Switch
+                    value={userSettings.shareDemographics}
+                    onValueChange={(value) => setUserSettings({...userSettings, shareDemographics: value})}
+                    trackColor={{ false: "#767577", true: colors.primary }}
+                    thumbColor="#f4f3f4"
+                  />
+                </View>
+                
+                <Text style={[styles.privacyNote, { color: colors.textSecondary }]}>
+                  We value your privacy. Your data is securely stored and will only be used as specified by your settings above.
+                  See our <Text style={{textDecorationLine: 'underline'}}>Privacy Policy</Text> for more information.
+                </Text>
+              </ScrollView>
+              
+              {/* Save Button */}
+              <TouchableOpacity
+                style={[
+                  styles.saveButton,
+                  { backgroundColor: colors.primary }
+                ]}
+                onPress={handleSettingsSave}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save Settings</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
     );
   };
   
@@ -733,6 +1530,11 @@ const Sidebar = ({
           {reflectionHistory.map(renderReflectionCard)}
         </Animated.View>
       </ScrollView>
+      
+      {/* Render Modals */}
+      {renderSignInModal()}
+      {renderSignUpModal()}
+      {renderSettingsModal()}
     </Animated.View>
   );
 };
@@ -981,6 +1783,188 @@ const styles = StyleSheet.create({
   insightText: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  modalContainer: {
+    width: '85%',
+    maxWidth: 400,
+    borderRadius: 12,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  settingsContainer: {
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  closeButton: {
+    padding: 5,
+  },
+  formGroup: {
+    marginBottom: 16,
+  },
+  formLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 6,
+  },
+  formInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  forgotPasswordLink: {
+    alignSelf: 'flex-end',
+    marginTop: 4,
+  },
+  linkText: {
+    fontSize: 12,
+  },
+  errorText: {
+    color: '#FF4136',
+    fontSize: 14,
+    marginBottom: 16,
+  },
+  signInButton: {
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signInButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  oauthContainer: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  oauthText: {
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  oauthButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  oauthButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 10,
+  },
+  signUpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  signUpText: {
+    fontSize: 14,
+    marginRight: 4,
+  },
+  signUpLink: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  guestButton: {
+    alignItems: 'center',
+    marginTop: 16,
+    paddingVertical: 10,
+  },
+  guestButtonText: {
+    fontSize: 14,
+  },
+  // Settings modal styles
+  settingsScrollView: {
+    marginBottom: 16,
+  },
+  sectionHeader: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  disclaimer: {
+    fontSize: 12,
+    marginBottom: 16,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  toggleInfo: {
+    flex: 1,
+    marginRight: 10,
+  },
+  toggleLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  toggleDescription: {
+    fontSize: 12,
+  },
+  privacyNote: {
+    fontSize: 12,
+    marginTop: 20,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  saveButton: {
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  // New styles for sign up
+  privacyContainer: {
+    marginBottom: 16,
+  },
+  privacyText: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  privacyLink: {
+    textDecorationLine: 'underline',
   },
 });
 
