@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Text, View, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView, TextInput, Keyboard, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView, TextInput, Keyboard, ScrollView, KeyboardAvoidingView, Platform, Alert } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import Animated, { 
   useSharedValue, 
   withTiming, 
   useAnimatedStyle, 
   Easing,
-  interpolateColor 
+  interpolateColor,
+  withSequence 
 } from "react-native-reanimated";
 import Sidebar from './components/Sidebar';
 
@@ -16,11 +17,13 @@ const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.3; // 30% of screen width for sidebar
 export default function Index() {
   const micOpacity = useSharedValue(1);
   const circleScale = useSharedValue(0);
+  const micButtonScale = useSharedValue(1);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [activeView, setActiveView] = useState('dashboard');
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const inputRef = useRef(null);
   const scrollViewRef = useRef(null);
   
@@ -49,6 +52,12 @@ export default function Index() {
     transform: [{ scale: circleScale.value }],
     opacity: circleScale.value > 0 ? 1 : 0,
   }));
+  
+  const micButtonAnimStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: micButtonScale.value }],
+    };
+  });
 
   // Main content animation style
   const contentStyle = useAnimatedStyle(() => {
@@ -81,6 +90,64 @@ export default function Index() {
       backgroundColor,
     };
   });
+
+  // Handle microphone button press
+  const handleMicPress = () => {
+    // Animate microphone button
+    micButtonScale.value = withSequence(
+      withTiming(0.8, { duration: 150 }),
+      withTiming(1.1, { duration: 200 }),
+      withTiming(1, { duration: 150 })
+    );
+    
+    // If circle animation hasn't happened yet, trigger it
+    if (micOpacity.value === 1) {
+      startAnimation();
+    }
+    
+    // Toggle recording state
+    setIsRecording(prev => !prev);
+    
+    if (isRecording) {
+      // Stop recording
+      // For now, simulate getting text from speech
+      const transcription = simulateSpeechToText();
+      setChatMessage(prev => prev + transcription);
+      
+      // Let user know recording has stopped
+      Alert.alert(
+        "Recording Stopped",
+        "Text has been added to your message.",
+        [{ text: "OK" }]
+      );
+    } else {
+      // Start recording - simulate
+      // For demo purposes, show an alert
+      Alert.alert(
+        "Recording Started",
+        "Speak now... (This is a simulation - in a real app, speech recognition would be active)",
+        [{ text: "OK" }]
+      );
+      
+      // Set a timer to automatically stop "recording" after 3 seconds
+      setTimeout(() => {
+        if (isRecording) {
+          handleMicPress(); // Call again to stop recording
+        }
+      }, 3000);
+    }
+  };
+  
+  // Simulate getting text from speech (this would be replaced with actual speech recognition)
+  const simulateSpeechToText = () => {
+    const phrases = [
+      " I'm feeling anxious today",
+      " Can we talk about my stress levels",
+      " I had a difficult conversation yesterday",
+      " I'm having trouble sleeping lately"
+    ];
+    return phrases[Math.floor(Math.random() * phrases.length)];
+  };
 
   const startAnimation = () => {
     micOpacity.value = withTiming(0, { duration: 500 });
@@ -170,10 +237,9 @@ export default function Index() {
     // Clear input and dismiss keyboard
     setChatMessage('');
     
-    // If this is the first message, hide the microphone
-    if (messages.length === 0) {
-      micOpacity.value = 0;
-      circleScale.value = 1;
+    // If recording is active, stop it
+    if (isRecording) {
+      setIsRecording(false);
     }
     
     // Show typing indicator
@@ -242,20 +308,6 @@ export default function Index() {
         <Text style={[styles.title, isDarkTheme && styles.textLight, messages.length > 0 && styles.titleSmall]}>
           Eve Your Therapist on the Go
         </Text>
-
-        {/* Microphone button - only show if no messages */}
-        {messages.length === 0 && (
-          <Animated.View style={[micStyle, styles.micContainer]}>
-            <TouchableOpacity onPress={startAnimation}>
-              <FontAwesome name="microphone" size={40} color={isDarkTheme ? "#FFFFFF" : "#000000"} />
-            </TouchableOpacity>
-          </Animated.View>
-        )}
-
-        {/* Animated circle - only show visual if no messages */}
-        {messages.length === 0 && (
-          <Animated.View style={[styles.circle, circleStyle, isDarkTheme && styles.circleDark]} />
-        )}
         
         {/* Messages container */}
         {(messages.length > 0 || micOpacity.value < 1) && (
@@ -314,6 +366,26 @@ export default function Index() {
               micOpacity.value === 0 && styles.chatInputActive
             ]}
           >
+            {/* Microphone button (now inside the input) */}
+            <Animated.View style={micButtonAnimStyle}>
+              <TouchableOpacity 
+                onPress={handleMicPress}
+                style={[
+                  styles.micButton, 
+                  isDarkTheme && styles.micButtonDark,
+                  isRecording && styles.micButtonRecording
+                ]}
+              >
+                <FontAwesome 
+                  name={isRecording ? "stop-circle" : "microphone"} 
+                  size={18} 
+                  color={isRecording 
+                    ? "#FF4136" 
+                    : (isDarkTheme ? "#FFFFFF" : "#000000")} 
+                />
+              </TouchableOpacity>
+            </Animated.View>
+          
             <TextInput
               ref={inputRef}
               style={[
@@ -570,6 +642,22 @@ const styles = StyleSheet.create({
   chatInputActive: {
     transform: [{scale: 1}],
     opacity: 1,
+  },
+  // New microphone button styles
+  micButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  micButtonDark: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  micButtonRecording: {
+    backgroundColor: 'rgba(255, 65, 54, 0.1)',
   },
   chatInput: {
     flex: 1,
