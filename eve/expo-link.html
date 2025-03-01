@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Open Expo App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .button {
+            display: block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 16px;
+            margin: 20px auto;
+            cursor: pointer;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 300px;
+        }
+        .url-display {
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            word-break: break-all;
+            font-family: monospace;
+        }
+        .instructions {
+            text-align: left;
+            margin: 20px 0;
+            padding: 0 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Open Expo App</h1>
+        
+        <div class="instructions">
+            <h3>Option 1: Direct Link (Recommended)</h3>
+            <p>Click the button below on your mobile device:</p>
+        </div>
+        
+        <a href="exp://192.168.0.163:8081" class="button">Open in Expo Go</a>
+        <a href="exp+eve://expo-development-client/?url=http%3A%2F%2F192.168.0.163%3A8081" class="button">Open in Development Client</a>
+        
+        <div class="instructions">
+            <h3>Option 2: Manual Entry</h3>
+            <p>If the buttons don't work, open the Expo Go app and enter one of these URLs:</p>
+        </div>
+        
+        <div class="url-display">exp://192.168.0.163:8081</div>
+        <div class="url-display">exp+eve://expo-development-client/?url=http%3A%2F%2F192.168.0.163%3A8081</div>
+        
+        <div class="instructions">
+            <h3>Troubleshooting:</h3>
+            <ol>
+                <li>Make sure you have the Expo Go app installed on your device</li>
+                <li>Ensure your mobile device and computer are on the same network</li>
+                <li>Try using a tunnel connection if on different networks</li>
+                <li>Check if your firewall is blocking the connection</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html> 
