@@ -7,7 +7,8 @@ import {
   TextInput,
   StyleSheet,
   Dimensions,
-  Image
+  Image,
+  Platform
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { LineChart } from 'react-native-chart-kit';
@@ -21,8 +22,36 @@ import Animated, {
   interpolateColor
 } from 'react-native-reanimated';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.3; // 30% of screen width
+// ChatGPT-inspired color palette
+const COLORS = {
+  light: {
+    primary: '#00a67e', // ChatGPT-like accent
+    background: '#f9f9f9',
+    card: '#ffffff',
+    text: '#333333',
+    textSecondary: '#555555',
+    border: '#e0e0e0',
+    hover: '#f7f7f7',
+    active: '#f0f0f0',
+    activeBorder: '#00a67e',
+  },
+  dark: {
+    primary: '#00a67e', // Keep same accent for consistency
+    background: '#1e1e1e',
+    card: '#2a2a2a',
+    text: '#ffffff',
+    textSecondary: '#aaaaaa',
+    border: '#444444',
+    hover: '#333333',
+    active: '#3a3a3a',
+    activeBorder: '#00a67e',
+  }
+};
+
+// Get responsive dimensions
+const { width } = Dimensions.get('window');
+const isLargeScreen = width >= 768;
+const SIDEBAR_WIDTH = isLargeScreen ? 280 : width * 0.8;
 
 const Sidebar = ({ 
   onSelectConversation,
@@ -53,11 +82,25 @@ const Sidebar = ({
     ]
   });
   
+  // State for user menu
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  
+  // Mock user data
+  const [user, setUser] = useState({
+    isLoggedIn: true,
+    name: "John Doe",
+    avatar: "https://via.placeholder.com/60"
+  });
+  
   // Animation values
   const tabIndicatorPosition = useSharedValue(0);
   const conversationsOpacity = useSharedValue(1);
   const reflectionsOpacity = useSharedValue(0);
   const themeAnimValue = useSharedValue(isDarkTheme ? 1 : 0);
+  const submitButtonScale = useSharedValue(1);
+  
+  // Get current theme colors
+  const getThemeColors = () => isDarkTheme ? COLORS.dark : COLORS.light;
   
   useEffect(() => {
     // Animate theme change
@@ -79,25 +122,28 @@ const Sidebar = ({
   
   // Animation styles
   const containerStyle = useAnimatedStyle(() => {
-    const backgroundColor = interpolateColor(
-      themeAnimValue.value,
-      [0, 1],
-      ['#FFFFFF', '#1E1E1E']
-    );
+    const colors = getThemeColors();
     
     return {
-      backgroundColor,
+      backgroundColor: interpolateColor(
+        themeAnimValue.value,
+        [0, 1],
+        [COLORS.light.card, COLORS.dark.card]
+      ),
       borderRightColor: interpolateColor(
         themeAnimValue.value,
         [0, 1],
-        ['#e0e0e0', '#333333']
+        [COLORS.light.border, COLORS.dark.border]
       ),
     };
   });
   
   const tabIndicatorStyle = useAnimatedStyle(() => {
+    const colors = getThemeColors();
+    
     return {
       transform: [{ translateX: tabIndicatorPosition.value }],
+      backgroundColor: colors.primary
     };
   });
   
@@ -110,6 +156,12 @@ const Sidebar = ({
   const reflectionsTabStyle = useAnimatedStyle(() => {
     return {
       opacity: reflectionsOpacity.value,
+    };
+  });
+  
+  const submitButtonStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: submitButtonScale.value }],
     };
   });
   
@@ -231,50 +283,174 @@ const Sidebar = ({
     });
   };
   
-  // Animation for submit button
-  const submitButtonScale = useSharedValue(1);
-  const submitButtonStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: submitButtonScale.value }],
-    };
-  });
-  
   // Function to load more conversations (pagination)
   const loadMore = () => {
     setPage(page + 1);
     loadConversations();
   };
   
+  // Toggle user menu
+  const toggleUserMenu = () => {
+    setIsUserMenuOpen(!isUserMenuOpen);
+  };
+  
+  // Handle logout
+  const handleLogout = () => {
+    // This would be an API call or auth logout in a real app
+    setUser({...user, isLoggedIn: false});
+    setIsUserMenuOpen(false);
+  };
+  
+  // Handle login
+  const handleLogin = () => {
+    // This would navigate to a login screen in a real app
+    setUser({...user, isLoggedIn: true});
+  };
+  
+  // Render user section
+  const renderUserSection = () => {
+    const colors = getThemeColors();
+    
+    return (
+      <View style={[
+        styles.userSection,
+        { 
+          backgroundColor: colors.card,
+          borderBottomColor: colors.border 
+        }
+      ]}>
+        {user.isLoggedIn ? (
+          <TouchableOpacity 
+            style={styles.userButton}
+            onPress={toggleUserMenu}
+            activeOpacity={0.7}
+          >
+            <Image
+              source={{ uri: user.avatar }}
+              style={styles.userAvatar}
+            />
+            <Text style={[
+              styles.userName,
+              { color: colors.text }
+            ]}>
+              {user.name}
+            </Text>
+            <FontAwesome 
+              name={isUserMenuOpen ? "chevron-up" : "chevron-down"} 
+              size={12} 
+              color={colors.textSecondary} 
+              style={styles.userMenuIcon}
+            />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity 
+            style={[
+              styles.loginButton,
+              { 
+                backgroundColor: colors.primary,
+              }
+            ]}
+            onPress={handleLogin}
+          >
+            <FontAwesome 
+              name="user" 
+              size={14} 
+              color="#FFFFFF" 
+              style={{marginRight: 8}}
+            />
+            <Text style={styles.loginText}>Sign In</Text>
+          </TouchableOpacity>
+        )}
+        
+        {/* User menu dropdown */}
+        {isUserMenuOpen && user.isLoggedIn && (
+          <View style={[
+            styles.userMenu,
+            { 
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            }
+          ]}>
+            <TouchableOpacity 
+              style={styles.userMenuItem}
+              onPress={() => {
+                console.log('Account settings');
+                setIsUserMenuOpen(false);
+              }}
+            >
+              <FontAwesome 
+                name="cog" 
+                size={14} 
+                color={colors.text} 
+                style={styles.userMenuItemIcon}
+              />
+              <Text style={[
+                styles.userMenuItemText,
+                { color: colors.text }
+              ]}>
+                Account Settings
+              </Text>
+            </TouchableOpacity>
+            
+            <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
+            
+            <TouchableOpacity 
+              style={styles.userMenuItem}
+              onPress={handleLogout}
+            >
+              <FontAwesome 
+                name="sign-out" 
+                size={14} 
+                color={colors.text} 
+                style={styles.userMenuItemIcon}
+              />
+              <Text style={[
+                styles.userMenuItemText,
+                { color: colors.text }
+              ]}>
+                Sign Out
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
+  
   // Render conversation card
   const renderConversationCard = (conversation) => {
+    const colors = getThemeColors();
     const isActive = currentConversationId === conversation.id;
     
     return (
       <TouchableOpacity
         key={conversation.id}
         style={[
-          styles.card, 
-          isActive && styles.activeCard,
-          isDarkTheme && styles.cardDark,
-          isActive && isDarkTheme && styles.activeCardDark
+          styles.conversationCard, 
+          { 
+            backgroundColor: isActive ? colors.active : colors.card,
+            borderLeftColor: isActive ? colors.activeBorder : 'transparent',
+            borderColor: colors.border
+          }
         ]}
         onPress={() => onSelectConversation(conversation.id)}
+        activeOpacity={0.7}
       >
         <Text style={[
-          styles.cardTitle,
-          isDarkTheme && styles.textLight
+          styles.conversationTitle,
+          { color: colors.text }
         ]}>
           {conversation.title}
         </Text>
         <Text style={[
-          styles.cardPreview,
-          isDarkTheme && styles.textLightSecondary
-        ]} numberOfLines={2}>
+          styles.conversationPreview,
+          { color: colors.textSecondary }
+        ]} numberOfLines={1}>
           {conversation.preview}
         </Text>
         <Text style={[
-          styles.cardDate,
-          isDarkTheme && styles.textLightTertiary
+          styles.conversationDate,
+          { color: colors.textSecondary }
         ]}>
           {conversation.date}
         </Text>
@@ -284,23 +460,28 @@ const Sidebar = ({
   
   // Render reflection card
   const renderReflectionCard = (reflection) => {
+    const colors = getThemeColors();
+    
     return (
       <View 
         key={reflection.id} 
         style={[
           styles.reflectionCard,
-          isDarkTheme && styles.cardDark
+          { 
+            backgroundColor: colors.card,
+            borderColor: colors.border
+          }
         ]}
       >
         <Text style={[
           styles.reflectionDate,
-          isDarkTheme && styles.textLightTertiary
+          { color: colors.textSecondary }
         ]}>
           {reflection.date}
         </Text>
         <Text style={[
           styles.reflectionContent,
-          isDarkTheme && styles.textLight
+          { color: colors.text }
         ]}>
           {reflection.content}
         </Text>
@@ -320,27 +501,32 @@ const Sidebar = ({
   
   // AI insight component
   const renderAIInsight = () => {
+    const colors = getThemeColors();
+    
     return (
       <View style={[
         styles.insightContainer,
-        isDarkTheme && styles.insightContainerDark
+        { 
+          backgroundColor: isDarkTheme ? '#1e2a3a' : '#f0f8ff',
+          borderLeftColor: colors.primary
+        }
       ]}>
         <View style={styles.insightHeader}>
           <FontAwesome 
             name="lightbulb-o" 
             size={16} 
-            color={isDarkTheme ? "#FFD700" : "#000"} 
+            color={isDarkTheme ? "#FFD700" : colors.primary} 
           />
           <Text style={[
             styles.insightTitle,
-            isDarkTheme && styles.textLight
+            { color: colors.text }
           ]}>
             AI Insight
           </Text>
         </View>
         <Text style={[
           styles.insightText,
-          isDarkTheme && styles.textLightSecondary
+          { color: colors.textSecondary }
         ]}>
           Based on your recent reflections, you've been making steady progress in managing stress.
           Your scores have improved over time, indicating that the mindfulness techniques are working well for you.
@@ -351,45 +537,30 @@ const Sidebar = ({
   
   return (
     <Animated.View style={[styles.container, containerStyle]}>
-      {/* Profile section */}
-      <View style={[
-        styles.profileSection,
-        isDarkTheme && styles.profileSectionDark
-      ]}>
-        <Image
-          source={{ uri: 'https://via.placeholder.com/60' }}
-          style={styles.profileImage}
-        />
-        <Text style={[
-          styles.profileName,
-          isDarkTheme && styles.textLight
-        ]}>
-          User Name
-        </Text>
-      </View>
+      {/* User section at the top */}
+      {renderUserSection()}
       
       {/* Tab navigation */}
       <View style={[
         styles.tabContainer,
-        isDarkTheme && styles.tabContainerDark
+        { borderBottomColor: getThemeColors().border }
       ]}>
         <Animated.View 
           style={[
             styles.tabIndicator, 
-            tabIndicatorStyle,
-            isDarkTheme && styles.tabIndicatorDark
+            tabIndicatorStyle
           ]} 
         />
         
         <TouchableOpacity
           style={styles.tab}
           onPress={() => switchTab('conversations')}
+          activeOpacity={0.7}
         >
           <Text style={[
             styles.tabText,
-            activeTab === 'conversations' && styles.activeTabText,
-            isDarkTheme && styles.textLight,
-            activeTab === 'conversations' && isDarkTheme && styles.activeTabTextDark
+            { color: getThemeColors().text },
+            activeTab === 'conversations' && styles.activeTabText
           ]}>
             Conversations
           </Text>
@@ -398,12 +569,12 @@ const Sidebar = ({
         <TouchableOpacity
           style={styles.tab}
           onPress={() => switchTab('reflections')}
+          activeOpacity={0.7}
         >
           <Text style={[
             styles.tabText,
-            activeTab === 'reflections' && styles.activeTabText,
-            isDarkTheme && styles.textLight,
-            activeTab === 'reflections' && isDarkTheme && styles.activeTabTextDark
+            { color: getThemeColors().text },
+            activeTab === 'reflections' && styles.activeTabText
           ]}>
             Reflections
           </Text>
@@ -411,10 +582,17 @@ const Sidebar = ({
       </View>
       
       {/* Content container */}
-      <ScrollView style={styles.contentContainer}>
+      <ScrollView 
+        style={[
+          styles.contentContainer,
+          { backgroundColor: getThemeColors().background }
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Conversations Tab Content */}
         <Animated.View 
           style={[
+            styles.tabContent,
             { display: activeTab === 'conversations' ? 'flex' : 'none' },
             conversationsTabStyle
           ]}
@@ -424,7 +602,7 @@ const Sidebar = ({
           {loading ? (
             <Text style={[
               styles.loadingText,
-              isDarkTheme && styles.textLightTertiary
+              { color: getThemeColors().textSecondary }
             ]}>
               Loading...
             </Text>
@@ -432,13 +610,17 @@ const Sidebar = ({
             <TouchableOpacity 
               style={[
                 styles.loadMoreButton,
-                isDarkTheme && styles.loadMoreButtonDark
+                { 
+                  backgroundColor: getThemeColors().background,
+                  borderColor: getThemeColors().border
+                }
               ]} 
               onPress={loadMore}
+              activeOpacity={0.7}
             >
               <Text style={[
                 styles.loadMoreText,
-                isDarkTheme && styles.textLight
+                { color: getThemeColors().primary }
               ]}>
                 Load More
               </Text>
@@ -449,6 +631,7 @@ const Sidebar = ({
         {/* Reflections Tab Content */}
         <Animated.View 
           style={[
+            styles.tabContent,
             { display: activeTab === 'reflections' ? 'flex' : 'none' },
             reflectionsTabStyle
           ]}
@@ -456,27 +639,34 @@ const Sidebar = ({
           {/* New reflection input */}
           <View style={[
             styles.reflectionInputContainer,
-            isDarkTheme && styles.cardDark
+            { 
+              backgroundColor: getThemeColors().card,
+              borderColor: getThemeColors().border
+            }
           ]}>
             <TextInput
               style={[
                 styles.reflectionInput,
-                isDarkTheme && styles.reflectionInputDark
+                { 
+                  backgroundColor: isDarkTheme ? getThemeColors().background : '#ffffff',
+                  borderColor: getThemeColors().border,
+                  color: getThemeColors().text
+                }
               ]}
               placeholder="Write your reflection for today..."
               placeholderTextColor={isDarkTheme ? '#888' : '#999'}
               value={reflection}
               onChangeText={setReflection}
               multiline
-              color={isDarkTheme ? '#FFF' : '#000'}
             />
             <Animated.View style={submitButtonStyle}>
               <TouchableOpacity 
                 style={[
                   styles.submitButton,
-                  isDarkTheme && styles.submitButtonDark
+                  { backgroundColor: getThemeColors().primary }
                 ]}
                 onPress={submitReflection}
+                activeOpacity={0.7}
               >
                 <Text style={styles.submitText}>Submit</Text>
               </TouchableOpacity>
@@ -486,22 +676,25 @@ const Sidebar = ({
           {/* Reflection chart */}
           <View style={[
             styles.chartContainer,
-            isDarkTheme && styles.cardDark
+            { 
+              backgroundColor: getThemeColors().card,
+              borderColor: getThemeColors().border
+            }
           ]}>
             <Text style={[
               styles.chartTitle,
-              isDarkTheme && styles.textLight
+              { color: getThemeColors().text }
             ]}>
               Mood Trend
             </Text>
             <LineChart
               data={reflectionData}
-              width={SIDEBAR_WIDTH * 0.8}
+              width={SIDEBAR_WIDTH * 0.85}
               height={180}
               chartConfig={{
-                backgroundColor: isDarkTheme ? '#222' : '#fff',
-                backgroundGradientFrom: isDarkTheme ? '#222' : '#fff',
-                backgroundGradientTo: isDarkTheme ? '#222' : '#fff',
+                backgroundColor: isDarkTheme ? getThemeColors().background : '#fff',
+                backgroundGradientFrom: isDarkTheme ? getThemeColors().background : '#fff',
+                backgroundGradientTo: isDarkTheme ? getThemeColors().background : '#fff',
                 decimalPlaces: 0,
                 color: (opacity = 1) => isDarkTheme 
                   ? `rgba(200, 200, 255, ${opacity})` 
@@ -510,7 +703,7 @@ const Sidebar = ({
                   ? `rgba(255, 255, 255, ${opacity})`
                   : `rgba(0, 0, 0, ${opacity})`,
                 style: {
-                  borderRadius: 16,
+                  borderRadius: 8,
                 },
               }}
               bezier
@@ -524,7 +717,7 @@ const Sidebar = ({
           {/* Reflection history */}
           <Text style={[
             styles.sectionTitle,
-            isDarkTheme && styles.textLight
+            { color: getThemeColors().text }
           ]}>
             Past Reflections
           </Text>
@@ -537,44 +730,91 @@ const Sidebar = ({
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     width: '100%',
-    height: '100%',
-    backgroundColor: '#fff',
     borderRightWidth: 1,
-    borderRightColor: '#e0e0e0',
   },
-  profileSection: {
-    alignItems: 'center',
-    paddingTop: 50,
-    paddingBottom: 20,
+  userSection: {
+    paddingVertical: 16,
+    paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    position: 'relative',
   },
-  profileSectionDark: {
-    borderBottomColor: '#333',
+  userButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
   },
-  profileImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginBottom: 10,
+  userAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
   },
-  profileName: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  userName: {
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+  },
+  userMenuIcon: {
+    marginLeft: 4,
+  },
+  loginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  loginText: {
+    color: '#FFFFFF',
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  userMenu: {
+    position: 'absolute',
+    top: 64,
+    left: 12,
+    right: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 10,
+    overflow: 'hidden',
+  },
+  userMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  userMenuItemIcon: {
+    marginRight: 12,
+    width: 16,
+    textAlign: 'center',
+  },
+  userMenuItemText: {
+    fontSize: 14,
+  },
+  menuDivider: {
+    height: 1,
+    width: '100%',
   },
   tabContainer: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
     position: 'relative',
-  },
-  tabContainerDark: {
-    borderBottomColor: '#333',
   },
   tab: {
     flex: 1,
-    paddingVertical: 15,
+    paddingVertical: 16,
     alignItems: 'center',
     zIndex: 1,
   },
@@ -584,153 +824,119 @@ const styles = StyleSheet.create({
     left: 0,
     width: '50%',
     height: 2,
-    backgroundColor: '#000',
     zIndex: 0,
-  },
-  tabIndicatorDark: {
-    backgroundColor: '#FFF',
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
   },
   activeTabText: {
-    fontWeight: 'bold',
-  },
-  activeTabTextDark: {
-    color: '#FFF',
+    fontWeight: '700',
   },
   contentContainer: {
     flex: 1,
-    padding: 10,
   },
-  card: {
+  tabContent: {
     padding: 12,
-    backgroundColor: '#f9f9f9',
+  },
+  conversationCard: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderRadius: 8,
-    marginBottom: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: '#ddd',
+    marginBottom: 10,
+    borderLeftWidth: 4,
+    borderWidth: 1,
+    minHeight: 44, // Touch-friendly target
   },
-  cardDark: {
-    backgroundColor: '#2A2A2A',
-    borderLeftColor: '#444',
-  },
-  activeCard: {
-    borderLeftColor: '#000',
-    backgroundColor: '#f0f0f0',
-  },
-  activeCardDark: {
-    borderLeftColor: '#FFF',
-    backgroundColor: '#333',
-  },
-  cardTitle: {
+  conversationTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 5,
+    fontWeight: '600',
+    marginBottom: 4,
   },
-  cardPreview: {
+  conversationPreview: {
     fontSize: 12,
-    color: '#666',
     marginBottom: 8,
   },
-  cardDate: {
-    fontSize: 10,
-    color: '#999',
+  conversationDate: {
+    fontSize: 11,
     alignSelf: 'flex-end',
   },
   loadingText: {
     textAlign: 'center',
     padding: 10,
-    color: '#666',
   },
   loadMoreButton: {
-    padding: 10,
-    backgroundColor: '#f0f0f0',
+    padding: 12,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  loadMoreButtonDark: {
-    backgroundColor: '#333',
+    marginTop: 8,
+    marginBottom: 16,
+    borderWidth: 1,
   },
   loadMoreText: {
-    color: '#333',
     fontWeight: '500',
-    fontSize: 12,
+    fontSize: 14,
   },
   reflectionInputContainer: {
-    marginBottom: 15,
-    backgroundColor: '#f9f9f9',
+    marginBottom: 16,
     borderRadius: 8,
-    padding: 8,
+    padding: 12,
+    borderWidth: 1,
   },
   reflectionInput: {
     height: 80,
     textAlignVertical: 'top',
-    padding: 8,
-    backgroundColor: '#fff',
+    padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    fontSize: 12,
-  },
-  reflectionInputDark: {
-    backgroundColor: '#333',
-    borderColor: '#444',
-    color: '#FFF',
+    fontSize: 14,
   },
   submitButton: {
-    backgroundColor: '#000',
-    padding: 10,
+    padding: 12,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 8,
   },
-  submitButtonDark: {
-    backgroundColor: '#4682b4',
-  },
   submitText: {
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 12,
+    fontWeight: '600',
+    fontSize: 14,
   },
   chartContainer: {
-    marginBottom: 15,
-    padding: 8,
-    backgroundColor: '#f9f9f9',
+    marginBottom: 16,
+    padding: 12,
     borderRadius: 8,
     alignItems: 'center',
+    borderWidth: 1,
   },
   chartTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '600',
     marginBottom: 8,
+    alignSelf: 'flex-start',
   },
   chart: {
     borderRadius: 8,
-    marginVertical: 6,
+    marginVertical: 8,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     marginTop: 8,
     marginBottom: 12,
   },
   reflectionCard: {
     padding: 12,
-    backgroundColor: '#f9f9f9',
     borderRadius: 8,
     marginBottom: 12,
+    borderWidth: 1,
   },
   reflectionDate: {
-    fontSize: 10,
-    color: '#999',
-    marginBottom: 3,
+    fontSize: 11,
+    marginBottom: 4,
   },
   reflectionContent: {
-    fontSize: 12,
+    fontSize: 13,
     marginBottom: 8,
   },
   reflectionScore: {
@@ -738,40 +944,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   insightContainer: {
-    padding: 12,
-    backgroundColor: '#f0f8ff',
+    padding: 14,
     borderRadius: 8,
-    marginBottom: 15,
-    borderLeftWidth: 3,
-    borderLeftColor: '#4682b4',
-  },
-  insightContainerDark: {
-    backgroundColor: '#1e2a3a',
-    borderLeftColor: '#4682b4',
+    marginBottom: 16,
+    borderLeftWidth: 4,
   },
   insightHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   insightTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
-    marginLeft: 6,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   insightText: {
-    fontSize: 12,
-    color: '#333',
+    fontSize: 13,
     lineHeight: 18,
-  },
-  textLight: {
-    color: '#FFF',
-  },
-  textLightSecondary: {
-    color: '#AAA',
-  },
-  textLightTertiary: {
-    color: '#777',
   },
 });
 
