@@ -746,18 +746,20 @@ const Sidebar = ({
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.modalOverlay}
         >
-          <TouchableOpacity 
-            style={styles.modalBackground}
-            activeOpacity={1}
-            onPress={() => setIsSignInModalVisible(false)}
-          >
+          <View style={styles.modalBackground}>
+            {/* Background overlay - only this should close the modal */}
+            <TouchableOpacity 
+              style={styles.modalBackdrop}
+              activeOpacity={1}
+              onPress={() => setIsSignInModalVisible(false)}
+            />
+            
+            {/* Modal content - this should NOT close when clicked */}
             <View 
               style={[
                 styles.modalContainer,
                 { backgroundColor: colors.card }
               ]}
-              onStartShouldSetResponder={() => true}
-              onTouchEnd={(e) => e.stopPropagation()}
             >
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>
@@ -860,14 +862,6 @@ const Sidebar = ({
                   >
                     <FontAwesome name="facebook" size={18} color="#4267B2" />
                   </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[
-                      styles.oauthButton,
-                      { backgroundColor: isDarkTheme ? '#333' : '#f1f1f1' }
-                    ]}
-                  >
-                    <FontAwesome name="apple" size={18} color={isDarkTheme ? "#fff" : "#000"} />
-                  </TouchableOpacity>
                 </View>
               </View>
               
@@ -895,7 +889,7 @@ const Sidebar = ({
                 </Text>
               </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+          </View>
         </KeyboardAvoidingView>
       </Modal>
     );
@@ -916,18 +910,20 @@ const Sidebar = ({
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.modalOverlay}
         >
-          <TouchableOpacity 
-            style={styles.modalBackground}
-            activeOpacity={1}
-            onPress={() => setIsSignUpModalVisible(false)}
-          >
+          <View style={styles.modalBackground}>
+            {/* Background overlay - only this should close the modal */}
+            <TouchableOpacity 
+              style={styles.modalBackdrop}
+              activeOpacity={1}
+              onPress={() => setIsSignUpModalVisible(false)}
+            />
+            
+            {/* Modal content - this should NOT close when clicked */}
             <View 
               style={[
                 styles.modalContainer,
                 { backgroundColor: colors.card }
               ]}
-              onStartShouldSetResponder={() => true}
-              onTouchEnd={(e) => e.stopPropagation()}
             >
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>
@@ -1076,14 +1072,6 @@ const Sidebar = ({
                   >
                     <FontAwesome name="facebook" size={18} color="#4267B2" />
                   </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[
-                      styles.oauthButton,
-                      { backgroundColor: isDarkTheme ? '#333' : '#f1f1f1' }
-                    ]}
-                  >
-                    <FontAwesome name="apple" size={18} color={isDarkTheme ? "#fff" : "#000"} />
-                  </TouchableOpacity>
                 </View>
               </View>
               
@@ -1099,7 +1087,7 @@ const Sidebar = ({
                 </TouchableOpacity>
               </View>
             </View>
-          </TouchableOpacity>
+          </View>
         </KeyboardAvoidingView>
       </Modal>
     );
@@ -1120,19 +1108,21 @@ const Sidebar = ({
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.modalOverlay}
         >
-          <TouchableOpacity 
-            style={styles.modalBackground}
-            activeOpacity={1}
-            onPress={() => setIsSettingsModalVisible(false)}
-          >
+          <View style={styles.modalBackground}>
+            {/* Background overlay - only this should close the modal */}
+            <TouchableOpacity 
+              style={styles.modalBackdrop}
+              activeOpacity={1}
+              onPress={() => setIsSettingsModalVisible(false)}
+            />
+            
+            {/* Modal content - this should NOT close when clicked */}
             <View 
               style={[
                 styles.modalContainer,
                 styles.settingsContainer,
                 { backgroundColor: colors.card }
               ]}
-              onStartShouldSetResponder={() => true}
-              onTouchEnd={(e) => e.stopPropagation()}
             >
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>
@@ -1335,7 +1325,7 @@ const Sidebar = ({
                 )}
               </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+          </View>
         </KeyboardAvoidingView>
       </Modal>
     );
@@ -1784,7 +1774,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  // Modal styles
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
@@ -1792,10 +1781,18 @@ const styles = StyleSheet.create({
   },
   modalBackground: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
+    position: 'relative',
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContainer: {
     width: '85%',
@@ -1808,6 +1805,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+    zIndex: 10,
   },
   settingsContainer: {
     maxHeight: '80%',
@@ -1904,7 +1902,6 @@ const styles = StyleSheet.create({
   guestButtonText: {
     fontSize: 14,
   },
-  // Settings modal styles
   settingsScrollView: {
     marginBottom: 16,
   },
@@ -1954,7 +1951,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  // New styles for sign up
   privacyContainer: {
     marginBottom: 16,
   },
