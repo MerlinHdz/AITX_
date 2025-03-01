@@ -78,7 +78,7 @@ const COLORS = {
   }
 };
 
-export default function Index() {
+export default function yolo() {
   // Get screen dimensions (responsive to changes)
   const dimensions = useWindowDimensions();
   const { 
@@ -395,11 +395,12 @@ export default function Index() {
         <Text style={[
           styles.headerTitle, 
           { 
-            fontSize: titleSize * 0.9,
-            color: colors.text 
+            fontSize: titleSize * 1.4,
+            color: colors.text, 
+            
           }
         ]}>
-          Eve Your Therapist on the Go
+          Eve – Smart Therapy, Real Support
         </Text>
         
         <TouchableOpacity 
@@ -407,7 +408,7 @@ export default function Index() {
           onPress={toggleTheme}
         >
           <FontAwesome 
-            name={isDarkTheme ? "sun-o" : "moon-o"} 
+            name={isDarkTheme ? "sun-bright" : "moon-o"} 
             size={iconSize} 
             color={colors.text} 
           />
