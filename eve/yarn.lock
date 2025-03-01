@@ -3922,7 +3922,7 @@ expo-modules-core@2.2.2:
   dependencies:
     invariant "^2.2.4"
 
-expo-router@~4.0.17:
+expo-router@^4.0.17:
   version "4.0.17"
   resolved "https://registry.npmjs.org/expo-router/-/expo-router-4.0.17.tgz"
   integrity sha512-8ybo6bVwdG1S9hafh9BTOjX1hpCgomdUvs6hKHMM01koo8mQ7zocH/+zxQeaMVDxGhboz2dO5GiDchWJ0OheRA==
@@ -5768,7 +5768,7 @@ metro-transform-worker@0.81.2:
     metro-transform-plugins "0.81.2"
     nullthrows "^1.1.1"
 
-metro@^0.81.0, metro@0.81.2:
+metro@^0.81.0, metro@^0.81.2, metro@0.81.2:
   version "0.81.2"
   resolved "https://registry.npmjs.org/metro/-/metro-0.81.2.tgz"
   integrity sha512-3jvcYBmSEFWtXJC3BX9/pKyme0gEyrZfHuDvuZiS46+3u8rcNlk0bjnGS/qxIW/h8icyVuQRaoH/Q1VdQJHvuQ==

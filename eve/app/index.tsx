@@ -1,3 +1,4 @@
+import React from 'react';
 import { Text, View, TouchableOpacity, StyleSheet } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import Animated, { useSharedValue, withTiming, useAnimatedStyle } from "react-native-reanimated";
@@ -40,22 +41,16 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#000",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   micContainer: {
-    position: "absolute",
-    bottom: 80,
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 50,
+    marginBottom: 20,
   },
   circle: {
-    position: "absolute",
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: "#fff",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
   },
 });
