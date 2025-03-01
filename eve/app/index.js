@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Text, View, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView, TextInput, Keyboard } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView, TextInput, Keyboard, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import Animated, { 
   useSharedValue, 
@@ -19,7 +19,10 @@ export default function Index() {
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [activeView, setActiveView] = useState('dashboard');
   const [chatMessage, setChatMessage] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [isTyping, setIsTyping] = useState(false);
   const inputRef = useRef(null);
+  const scrollViewRef = useRef(null);
   
   // Animation values for smooth transitions
   const contentOpacity = useSharedValue(1);
@@ -132,22 +135,80 @@ export default function Index() {
     }, 200);
   };
   
+  // Store the current conversation if it becomes a real conversation
+  useEffect(() => {
+    if (messages.length > 0 && !currentConversationId) {
+      // Generate a timestamp-based ID for this new conversation
+      const newConversationId = `new-${Date.now()}`;
+      setCurrentConversationId(newConversationId);
+    }
+  }, [messages]);
+  
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [messages]);
+  
   const handleSendMessage = () => {
     if (!chatMessage.trim()) return;
     
-    console.log('Sending message:', chatMessage);
-    // Here you would typically send the message to your backend
-    // And then potentially navigate to the conversation view
+    // Create the user message
+    const userMessage = {
+      id: Date.now().toString(),
+      text: chatMessage.trim(),
+      sender: 'user',
+      timestamp: new Date().toISOString()
+    };
     
-    // For now, just clear the input
+    // Add message to state
+    setMessages(prevMessages => [...prevMessages, userMessage]);
+    
+    // Clear input and dismiss keyboard
     setChatMessage('');
-    Keyboard.dismiss();
+    
+    // If this is the first message, hide the microphone
+    if (messages.length === 0) {
+      micOpacity.value = 0;
+      circleScale.value = 1;
+    }
+    
+    // Show typing indicator
+    setIsTyping(true);
+    
+    // Simulate Eve's response after a small delay
+    setTimeout(() => {
+      setIsTyping(false);
+      
+      // Sample responses - in a real app, this would come from your AI backend
+      const responses = [
+        "I understand how you feel. Can you tell me more about that?",
+        "That's interesting. How does that make you feel?",
+        "I appreciate you sharing that with me. What do you think led to this?",
+        "I'm here to listen. Would you like to explore this further?",
+        "Thank you for opening up. Is there anything specific you'd like to focus on today?"
+      ];
+      
+      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+      
+      const aiMessage = {
+        id: (Date.now() + 1).toString(),
+        text: randomResponse,
+        sender: 'ai',
+        timestamp: new Date().toISOString()
+      };
+      
+      setMessages(prevMessages => [...prevMessages, aiMessage]);
+    }, 1500);
   };
 
   // Render the appropriate view based on active view state
   const renderMainContent = () => {
     if (activeView === 'conversation' && currentConversationId) {
-      // Render conversation view
+      // Render conversation view (for historic conversations)
       return (
         <View style={styles.conversationContainer}>
           <View style={styles.conversationHeader}>
@@ -170,18 +231,79 @@ export default function Index() {
       );
     }
     
-    // Default dashboard view
+    // Default dashboard view with chat functionality
     return (
-      <View style={styles.dashboardContainer}>
-        <Text style={[styles.title, isDarkTheme && styles.textLight]}>Eve Your Therapist on the Go</Text>
+      <KeyboardAvoidingView 
+        style={styles.dashboardContainer}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+      >
+        {/* App title */}
+        <Text style={[styles.title, isDarkTheme && styles.textLight, messages.length > 0 && styles.titleSmall]}>
+          Eve Your Therapist on the Go
+        </Text>
 
-        <Animated.View style={[micStyle, styles.micContainer]}>
-          <TouchableOpacity onPress={startAnimation}>
-            <FontAwesome name="microphone" size={40} color={isDarkTheme ? "#FFFFFF" : "#000000"} />
-          </TouchableOpacity>
-        </Animated.View>
+        {/* Microphone button - only show if no messages */}
+        {messages.length === 0 && (
+          <Animated.View style={[micStyle, styles.micContainer]}>
+            <TouchableOpacity onPress={startAnimation}>
+              <FontAwesome name="microphone" size={40} color={isDarkTheme ? "#FFFFFF" : "#000000"} />
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
-        <Animated.View style={[styles.circle, circleStyle, isDarkTheme && styles.circleDark]} />
+        {/* Animated circle - only show visual if no messages */}
+        {messages.length === 0 && (
+          <Animated.View style={[styles.circle, circleStyle, isDarkTheme && styles.circleDark]} />
+        )}
+        
+        {/* Messages container */}
+        {(messages.length > 0 || micOpacity.value < 1) && (
+          <ScrollView
+            style={[styles.messagesContainer, messages.length === 0 && styles.emptyMessagesContainer]}
+            contentContainerStyle={styles.messagesContent}
+            ref={scrollViewRef}
+          >
+            {messages.map(message => (
+              <View 
+                key={message.id} 
+                style={[
+                  styles.messageBubble,
+                  message.sender === 'user' ? styles.userBubble : styles.aiBubble,
+                  message.sender === 'user' 
+                    ? (isDarkTheme ? styles.userBubbleDark : {}) 
+                    : (isDarkTheme ? styles.aiBubbleDark : {})
+                ]}
+              >
+                <Text style={[
+                  styles.messageText,
+                  message.sender === 'user' ? styles.userMessageText : styles.aiMessageText,
+                  message.sender === 'ai' && isDarkTheme && styles.aiMessageTextDark
+                ]}>
+                  {message.text}
+                </Text>
+              </View>
+            ))}
+            
+            {/* Typing indicator */}
+            {isTyping && (
+              <View style={[
+                styles.messageBubble, 
+                styles.aiBubble,
+                isDarkTheme && styles.aiBubbleDark,
+                styles.typingBubble
+              ]}>
+                <Text style={[
+                  styles.typingText,
+                  isDarkTheme && styles.typingTextDark
+                ]}>
+                  Eve is typing
+                  <Text style={styles.typingDots}>...</Text>
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        )}
         
         {/* Chat input area at the bottom */}
         <View style={styles.chatInputWrapper}>
@@ -228,7 +350,7 @@ export default function Index() {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     );
   };
 
@@ -284,15 +406,21 @@ const styles = StyleSheet.create({
   },
   dashboardContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     position: 'relative',
     width: '100%',
+    paddingTop: 40,
   },
   title: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 20,
+    textAlign: 'center',
+  },
+  titleSmall: {
+    fontSize: 18,
+    marginBottom: 10,
   },
   micContainer: {
     marginBottom: 5,
@@ -302,6 +430,8 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 150,
     backgroundColor: 'black',
+    position: 'absolute',
+    zIndex: -1,
   },
   circleDark: {
     backgroundColor: '#4682b4',
@@ -344,16 +474,75 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // Message display styles
+  messagesContainer: {
+    flex: 1,
+    width: '100%',
+    paddingHorizontal: 20,
+  },
+  emptyMessagesContainer: {
+    opacity: 0, // Hide when no messages, but keep layout
+  },
+  messagesContent: {
+    flexGrow: 1,
+    justifyContent: 'flex-end',
+    paddingVertical: 20,
+  },
+  messageBubble: {
+    maxWidth: '80%',
+    padding: 12,
+    borderRadius: 18,
+    marginBottom: 10,
+  },
+  userBubble: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#000',
+    borderTopRightRadius: 4,
+  },
+  userBubbleDark: {
+    backgroundColor: '#4682b4',
+  },
+  aiBubble: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#f0f0f0',
+    borderTopLeftRadius: 4,
+  },
+  aiBubbleDark: {
+    backgroundColor: '#333',
+  },
   messageText: {
     fontSize: 16,
+    lineHeight: 22,
   },
-  // New styles for chat input
+  userMessageText: {
+    color: '#fff',
+  },
+  aiMessageText: {
+    color: '#000',
+  },
+  aiMessageTextDark: {
+    color: '#fff',
+  },
+  typingBubble: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  typingText: {
+    fontSize: 14,
+    color: '#555',
+  },
+  typingTextDark: {
+    color: '#ccc',
+  },
+  typingDots: {
+    letterSpacing: 2,
+  },
+  // Chat input styles
   chatInputWrapper: {
-    position: 'absolute',
-    bottom: 30,
     width: '100%',
     paddingHorizontal: 20,
     alignItems: 'center',
+    marginBottom: 20,
   },
   chatInputContainer: {
     flexDirection: 'row',
