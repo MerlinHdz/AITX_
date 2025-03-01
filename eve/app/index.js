@@ -53,4 +53,4 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     backgroundColor: 'rgba(0, 0, 0, 0.1)',
   },
-});
+}); 
