@@ -362,56 +362,65 @@ const Sidebar = ({
           </TouchableOpacity>
         )}
         
-        {/* User menu dropdown */}
+        {/* User menu dropdown - Positioned as a floating popover */}
         {isUserMenuOpen && user.isLoggedIn && (
-          <View style={[
-            styles.userMenu,
-            { 
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-            }
-          ]}>
+          <>
+            {/* Semi-transparent overlay to capture touches outside menu */}
             <TouchableOpacity 
-              style={styles.userMenuItem}
-              onPress={() => {
-                console.log('Account settings');
-                setIsUserMenuOpen(false);
-              }}
-            >
-              <FontAwesome 
-                name="cog" 
-                size={14} 
-                color={colors.text} 
-                style={styles.userMenuItemIcon}
-              />
-              <Text style={[
-                styles.userMenuItemText,
-                { color: colors.text }
-              ]}>
-                Account Settings
-              </Text>
-            </TouchableOpacity>
+              style={styles.menuOverlay}
+              activeOpacity={1}
+              onPress={() => setIsUserMenuOpen(false)}
+            />
             
-            <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
-            
-            <TouchableOpacity 
-              style={styles.userMenuItem}
-              onPress={handleLogout}
-            >
-              <FontAwesome 
-                name="sign-out" 
-                size={14} 
-                color={colors.text} 
-                style={styles.userMenuItemIcon}
-              />
-              <Text style={[
-                styles.userMenuItemText,
-                { color: colors.text }
-              ]}>
-                Sign Out
-              </Text>
-            </TouchableOpacity>
-          </View>
+            <View style={[
+              styles.userMenu,
+              { 
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              }
+            ]}>
+              <TouchableOpacity 
+                style={styles.userMenuItem}
+                onPress={() => {
+                  console.log('Account settings');
+                  setIsUserMenuOpen(false);
+                }}
+              >
+                <FontAwesome 
+                  name="cog" 
+                  size={14} 
+                  color={colors.text} 
+                  style={styles.userMenuItemIcon}
+                />
+                <Text style={[
+                  styles.userMenuItemText,
+                  { color: colors.text }
+                ]}>
+                  Account Settings
+                </Text>
+              </TouchableOpacity>
+              
+              <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
+              
+              <TouchableOpacity 
+                style={styles.userMenuItem}
+                onPress={handleLogout}
+              >
+                <FontAwesome 
+                  name="sign-out" 
+                  size={14} 
+                  color={colors.text} 
+                  style={styles.userMenuItemIcon}
+                />
+                <Text style={[
+                  styles.userMenuItemText,
+                  { color: colors.text }
+                ]}>
+                  Sign Out
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
         )}
       </View>
     );
@@ -739,6 +748,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderBottomWidth: 1,
     position: 'relative',
+    zIndex: 1,  // Ensure proper stacking context
   },
   userButton: {
     flexDirection: 'row',
@@ -774,19 +784,28 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 14,
   },
+  menuOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    zIndex: 100,
+  },
   userMenu: {
     position: 'absolute',
-    top: 64,
-    left: 12,
-    right: 12,
+    right: 12,  // Align to right side
+    top: 64,    // Position below the user button
+    width: SIDEBAR_WIDTH - 24,  // Full width minus margins
     borderRadius: 8,
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 3,
-    zIndex: 10,
+    elevation: 5,
+    zIndex: 101,  // Higher than overlay
     overflow: 'hidden',
   },
   userMenuItem: {
