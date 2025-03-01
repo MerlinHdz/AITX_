@@ -11,13 +11,23 @@ import {
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { LineChart } from 'react-native-chart-kit';
+import Animated, { 
+  useSharedValue, 
+  withTiming, 
+  useAnimatedStyle,
+  withSequence,
+  withDelay,
+  Easing,
+  interpolateColor
+} from 'react-native-reanimated';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.3; // 30% of screen width
 
 const Sidebar = ({ 
   onSelectConversation,
-  currentConversationId 
+  currentConversationId,
+  isDarkTheme = false
 }) => {
   // State for tabs
   const [activeTab, setActiveTab] = useState('conversations');
@@ -35,11 +45,27 @@ const Sidebar = ({
     datasets: [
       {
         data: [3, 4, 2, 5, 4, 3, 4],
-        color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+        color: (opacity = 1) => isDarkTheme 
+          ? `rgba(200, 200, 255, ${opacity})` 
+          : `rgba(0, 0, 0, ${opacity})`,
         strokeWidth: 2
       }
     ]
   });
+  
+  // Animation values
+  const tabIndicatorPosition = useSharedValue(0);
+  const conversationsOpacity = useSharedValue(1);
+  const reflectionsOpacity = useSharedValue(0);
+  const themeAnimValue = useSharedValue(isDarkTheme ? 1 : 0);
+  
+  useEffect(() => {
+    // Animate theme change
+    themeAnimValue.value = withTiming(isDarkTheme ? 1 : 0, {
+      duration: 400,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+    });
+  }, [isDarkTheme]);
   
   useEffect(() => {
     // Load conversations initially
@@ -50,6 +76,72 @@ const Sidebar = ({
       loadReflections();
     }
   }, [activeTab]);
+  
+  // Animation styles
+  const containerStyle = useAnimatedStyle(() => {
+    const backgroundColor = interpolateColor(
+      themeAnimValue.value,
+      [0, 1],
+      ['#FFFFFF', '#1E1E1E']
+    );
+    
+    return {
+      backgroundColor,
+      borderRightColor: interpolateColor(
+        themeAnimValue.value,
+        [0, 1],
+        ['#e0e0e0', '#333333']
+      ),
+    };
+  });
+  
+  const tabIndicatorStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: tabIndicatorPosition.value }],
+    };
+  });
+  
+  const conversationsTabStyle = useAnimatedStyle(() => {
+    return {
+      opacity: conversationsOpacity.value,
+    };
+  });
+  
+  const reflectionsTabStyle = useAnimatedStyle(() => {
+    return {
+      opacity: reflectionsOpacity.value,
+    };
+  });
+  
+  // Tab switch function with animation
+  const switchTab = (tab) => {
+    if (tab === activeTab) return;
+    
+    const isToReflections = tab === 'reflections';
+    
+    // Animate tab indicator
+    tabIndicatorPosition.value = withTiming(
+      isToReflections ? SIDEBAR_WIDTH / 2 : 0, 
+      { duration: 300, easing: Easing.bezier(0.25, 0.1, 0.25, 1) }
+    );
+    
+    // Fade out current content
+    if (isToReflections) {
+      conversationsOpacity.value = withTiming(0, { duration: 200 });
+      reflectionsOpacity.value = withDelay(
+        150, 
+        withTiming(1, { duration: 250 })
+      );
+    } else {
+      reflectionsOpacity.value = withTiming(0, { duration: 200 });
+      conversationsOpacity.value = withDelay(
+        150, 
+        withTiming(1, { duration: 250 })
+      );
+    }
+    
+    setActiveTab(tab);
+  };
   
   // Mock function to load conversations
   const loadConversations = async () => {
@@ -89,7 +181,9 @@ const Sidebar = ({
         datasets: [
           {
             data: newReflections.map(r => r.score),
-            color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+            color: (opacity = 1) => isDarkTheme 
+              ? `rgba(200, 200, 255, ${opacity})` 
+              : `rgba(0, 0, 0, ${opacity})`,
             strokeWidth: 2
           }
         ]
@@ -100,6 +194,13 @@ const Sidebar = ({
   // Function to submit a new reflection
   const submitReflection = () => {
     if (reflection.trim() === '') return;
+    
+    // Add animation to button
+    submitButtonScale.value = withSequence(
+      withTiming(0.9, { duration: 100 }),
+      withTiming(1.1, { duration: 100 }),
+      withTiming(1, { duration: 100 })
+    );
     
     // This would be an API call in a real app
     const newReflection = {
@@ -121,12 +222,22 @@ const Sidebar = ({
       datasets: [
         {
           data: newData,
-          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+          color: (opacity = 1) => isDarkTheme 
+            ? `rgba(200, 200, 255, ${opacity})` 
+            : `rgba(0, 0, 0, ${opacity})`,
           strokeWidth: 2
         }
       ]
     });
   };
+  
+  // Animation for submit button
+  const submitButtonScale = useSharedValue(1);
+  const submitButtonStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: submitButtonScale.value }],
+    };
+  });
   
   // Function to load more conversations (pagination)
   const loadMore = () => {
@@ -141,14 +252,32 @@ const Sidebar = ({
     return (
       <TouchableOpacity
         key={conversation.id}
-        style={[styles.card, isActive && styles.activeCard]}
+        style={[
+          styles.card, 
+          isActive && styles.activeCard,
+          isDarkTheme && styles.cardDark,
+          isActive && isDarkTheme && styles.activeCardDark
+        ]}
         onPress={() => onSelectConversation(conversation.id)}
       >
-        <Text style={styles.cardTitle}>{conversation.title}</Text>
-        <Text style={styles.cardPreview} numberOfLines={2}>
+        <Text style={[
+          styles.cardTitle,
+          isDarkTheme && styles.textLight
+        ]}>
+          {conversation.title}
+        </Text>
+        <Text style={[
+          styles.cardPreview,
+          isDarkTheme && styles.textLightSecondary
+        ]} numberOfLines={2}>
           {conversation.preview}
         </Text>
-        <Text style={styles.cardDate}>{conversation.date}</Text>
+        <Text style={[
+          styles.cardDate,
+          isDarkTheme && styles.textLightTertiary
+        ]}>
+          {conversation.date}
+        </Text>
       </TouchableOpacity>
     );
   };
@@ -156,16 +285,32 @@ const Sidebar = ({
   // Render reflection card
   const renderReflectionCard = (reflection) => {
     return (
-      <View key={reflection.id} style={styles.reflectionCard}>
-        <Text style={styles.reflectionDate}>{reflection.date}</Text>
-        <Text style={styles.reflectionContent}>{reflection.content}</Text>
+      <View 
+        key={reflection.id} 
+        style={[
+          styles.reflectionCard,
+          isDarkTheme && styles.cardDark
+        ]}
+      >
+        <Text style={[
+          styles.reflectionDate,
+          isDarkTheme && styles.textLightTertiary
+        ]}>
+          {reflection.date}
+        </Text>
+        <Text style={[
+          styles.reflectionContent,
+          isDarkTheme && styles.textLight
+        ]}>
+          {reflection.content}
+        </Text>
         <View style={styles.reflectionScore}>
           {[...Array(5)].map((_, i) => (
             <FontAwesome
               key={i}
               name="star"
               size={14}
-              color={i < reflection.score ? '#FFD700' : '#E0E0E0'}
+              color={i < reflection.score ? '#FFD700' : isDarkTheme ? '#555' : '#E0E0E0'}
             />
           ))}
         </View>
@@ -176,12 +321,27 @@ const Sidebar = ({
   // AI insight component
   const renderAIInsight = () => {
     return (
-      <View style={styles.insightContainer}>
+      <View style={[
+        styles.insightContainer,
+        isDarkTheme && styles.insightContainerDark
+      ]}>
         <View style={styles.insightHeader}>
-          <FontAwesome name="lightbulb-o" size={16} color="#000" />
-          <Text style={styles.insightTitle}>AI Insight</Text>
+          <FontAwesome 
+            name="lightbulb-o" 
+            size={16} 
+            color={isDarkTheme ? "#FFD700" : "#000"} 
+          />
+          <Text style={[
+            styles.insightTitle,
+            isDarkTheme && styles.textLight
+          ]}>
+            AI Insight
+          </Text>
         </View>
-        <Text style={styles.insightText}>
+        <Text style={[
+          styles.insightText,
+          isDarkTheme && styles.textLightSecondary
+        ]}>
           Based on your recent reflections, you've been making steady progress in managing stress.
           Your scores have improved over time, indicating that the mindfulness techniques are working well for you.
         </Text>
@@ -190,101 +350,188 @@ const Sidebar = ({
   };
   
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, containerStyle]}>
       {/* Profile section */}
-      <View style={styles.profileSection}>
+      <View style={[
+        styles.profileSection,
+        isDarkTheme && styles.profileSectionDark
+      ]}>
         <Image
           source={{ uri: 'https://via.placeholder.com/60' }}
           style={styles.profileImage}
         />
-        <Text style={styles.profileName}>User Name</Text>
+        <Text style={[
+          styles.profileName,
+          isDarkTheme && styles.textLight
+        ]}>
+          User Name
+        </Text>
       </View>
       
       {/* Tab navigation */}
-      <View style={styles.tabContainer}>
+      <View style={[
+        styles.tabContainer,
+        isDarkTheme && styles.tabContainerDark
+      ]}>
+        <Animated.View 
+          style={[
+            styles.tabIndicator, 
+            tabIndicatorStyle,
+            isDarkTheme && styles.tabIndicatorDark
+          ]} 
+        />
+        
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'conversations' && styles.activeTab]}
-          onPress={() => setActiveTab('conversations')}
+          style={styles.tab}
+          onPress={() => switchTab('conversations')}
         >
-          <Text style={styles.tabText}>Conversations</Text>
+          <Text style={[
+            styles.tabText,
+            activeTab === 'conversations' && styles.activeTabText,
+            isDarkTheme && styles.textLight,
+            activeTab === 'conversations' && isDarkTheme && styles.activeTabTextDark
+          ]}>
+            Conversations
+          </Text>
         </TouchableOpacity>
         
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'reflections' && styles.activeTab]}
-          onPress={() => setActiveTab('reflections')}
+          style={styles.tab}
+          onPress={() => switchTab('reflections')}
         >
-          <Text style={styles.tabText}>Reflections</Text>
+          <Text style={[
+            styles.tabText,
+            activeTab === 'reflections' && styles.activeTabText,
+            isDarkTheme && styles.textLight,
+            activeTab === 'reflections' && isDarkTheme && styles.activeTabTextDark
+          ]}>
+            Reflections
+          </Text>
         </TouchableOpacity>
       </View>
       
       {/* Content container */}
       <ScrollView style={styles.contentContainer}>
-        {activeTab === 'conversations' && (
-          <View>
-            {conversations.map(renderConversationCard)}
-            
-            {loading ? (
-              <Text style={styles.loadingText}>Loading...</Text>
-            ) : (
-              <TouchableOpacity style={styles.loadMoreButton} onPress={loadMore}>
-                <Text style={styles.loadMoreText}>Load More</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
+        {/* Conversations Tab Content */}
+        <Animated.View 
+          style={[
+            { display: activeTab === 'conversations' ? 'flex' : 'none' },
+            conversationsTabStyle
+          ]}
+        >
+          {conversations.map(renderConversationCard)}
+          
+          {loading ? (
+            <Text style={[
+              styles.loadingText,
+              isDarkTheme && styles.textLightTertiary
+            ]}>
+              Loading...
+            </Text>
+          ) : (
+            <TouchableOpacity 
+              style={[
+                styles.loadMoreButton,
+                isDarkTheme && styles.loadMoreButtonDark
+              ]} 
+              onPress={loadMore}
+            >
+              <Text style={[
+                styles.loadMoreText,
+                isDarkTheme && styles.textLight
+              ]}>
+                Load More
+              </Text>
+            </TouchableOpacity>
+          )}
+        </Animated.View>
         
-        {activeTab === 'reflections' && (
-          <View>
-            {/* New reflection input */}
-            <View style={styles.reflectionInputContainer}>
-              <TextInput
-                style={styles.reflectionInput}
-                placeholder="Write your reflection for today..."
-                value={reflection}
-                onChangeText={setReflection}
-                multiline
-              />
+        {/* Reflections Tab Content */}
+        <Animated.View 
+          style={[
+            { display: activeTab === 'reflections' ? 'flex' : 'none' },
+            reflectionsTabStyle
+          ]}
+        >
+          {/* New reflection input */}
+          <View style={[
+            styles.reflectionInputContainer,
+            isDarkTheme && styles.cardDark
+          ]}>
+            <TextInput
+              style={[
+                styles.reflectionInput,
+                isDarkTheme && styles.reflectionInputDark
+              ]}
+              placeholder="Write your reflection for today..."
+              placeholderTextColor={isDarkTheme ? '#888' : '#999'}
+              value={reflection}
+              onChangeText={setReflection}
+              multiline
+              color={isDarkTheme ? '#FFF' : '#000'}
+            />
+            <Animated.View style={submitButtonStyle}>
               <TouchableOpacity 
-                style={styles.submitButton}
+                style={[
+                  styles.submitButton,
+                  isDarkTheme && styles.submitButtonDark
+                ]}
                 onPress={submitReflection}
               >
                 <Text style={styles.submitText}>Submit</Text>
               </TouchableOpacity>
-            </View>
-            
-            {/* Reflection chart */}
-            <View style={styles.chartContainer}>
-              <Text style={styles.chartTitle}>Mood Trend</Text>
-              <LineChart
-                data={reflectionData}
-                width={SIDEBAR_WIDTH * 0.8}
-                height={180}
-                chartConfig={{
-                  backgroundColor: '#fff',
-                  backgroundGradientFrom: '#fff',
-                  backgroundGradientTo: '#fff',
-                  decimalPlaces: 0,
-                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                  style: {
-                    borderRadius: 16,
-                  },
-                }}
-                bezier
-                style={styles.chart}
-              />
-            </View>
-            
-            {/* AI Insight */}
-            {renderAIInsight()}
-            
-            {/* Reflection history */}
-            <Text style={styles.sectionTitle}>Past Reflections</Text>
-            {reflectionHistory.map(renderReflectionCard)}
+            </Animated.View>
           </View>
-        )}
+          
+          {/* Reflection chart */}
+          <View style={[
+            styles.chartContainer,
+            isDarkTheme && styles.cardDark
+          ]}>
+            <Text style={[
+              styles.chartTitle,
+              isDarkTheme && styles.textLight
+            ]}>
+              Mood Trend
+            </Text>
+            <LineChart
+              data={reflectionData}
+              width={SIDEBAR_WIDTH * 0.8}
+              height={180}
+              chartConfig={{
+                backgroundColor: isDarkTheme ? '#222' : '#fff',
+                backgroundGradientFrom: isDarkTheme ? '#222' : '#fff',
+                backgroundGradientTo: isDarkTheme ? '#222' : '#fff',
+                decimalPlaces: 0,
+                color: (opacity = 1) => isDarkTheme 
+                  ? `rgba(200, 200, 255, ${opacity})` 
+                  : `rgba(0, 0, 0, ${opacity})`,
+                labelColor: (opacity = 1) => isDarkTheme
+                  ? `rgba(255, 255, 255, ${opacity})`
+                  : `rgba(0, 0, 0, ${opacity})`,
+                style: {
+                  borderRadius: 16,
+                },
+              }}
+              bezier
+              style={styles.chart}
+            />
+          </View>
+          
+          {/* AI Insight */}
+          {renderAIInsight()}
+          
+          {/* Reflection history */}
+          <Text style={[
+            styles.sectionTitle,
+            isDarkTheme && styles.textLight
+          ]}>
+            Past Reflections
+          </Text>
+          {reflectionHistory.map(renderReflectionCard)}
+        </Animated.View>
       </ScrollView>
-    </View>
+    </Animated.View>
   );
 };
 
@@ -303,6 +550,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
+  profileSectionDark: {
+    borderBottomColor: '#333',
+  },
   profileImage: {
     width: 60,
     height: 60,
@@ -317,19 +567,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+    position: 'relative',
+  },
+  tabContainerDark: {
+    borderBottomColor: '#333',
   },
   tab: {
     flex: 1,
     paddingVertical: 15,
     alignItems: 'center',
+    zIndex: 1,
   },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#000',
+  tabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: '50%',
+    height: 2,
+    backgroundColor: '#000',
+    zIndex: 0,
+  },
+  tabIndicatorDark: {
+    backgroundColor: '#FFF',
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  activeTabText: {
+    fontWeight: 'bold',
+  },
+  activeTabTextDark: {
+    color: '#FFF',
   },
   contentContainer: {
     flex: 1,
@@ -343,9 +612,17 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: '#ddd',
   },
+  cardDark: {
+    backgroundColor: '#2A2A2A',
+    borderLeftColor: '#444',
+  },
   activeCard: {
     borderLeftColor: '#000',
     backgroundColor: '#f0f0f0',
+  },
+  activeCardDark: {
+    borderLeftColor: '#FFF',
+    backgroundColor: '#333',
   },
   cardTitle: {
     fontSize: 14,
@@ -375,6 +652,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 20,
   },
+  loadMoreButtonDark: {
+    backgroundColor: '#333',
+  },
   loadMoreText: {
     color: '#333',
     fontWeight: '500',
@@ -396,12 +676,20 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
     fontSize: 12,
   },
+  reflectionInputDark: {
+    backgroundColor: '#333',
+    borderColor: '#444',
+    color: '#FFF',
+  },
   submitButton: {
     backgroundColor: '#000',
     padding: 10,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 8,
+  },
+  submitButtonDark: {
+    backgroundColor: '#4682b4',
   },
   submitText: {
     color: '#fff',
@@ -457,6 +745,10 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: '#4682b4',
   },
+  insightContainerDark: {
+    backgroundColor: '#1e2a3a',
+    borderLeftColor: '#4682b4',
+  },
   insightHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -471,6 +763,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#333',
     lineHeight: 18,
+  },
+  textLight: {
+    color: '#FFF',
+  },
+  textLightSecondary: {
+    color: '#AAA',
+  },
+  textLightTertiary: {
+    color: '#777',
   },
 });
 
