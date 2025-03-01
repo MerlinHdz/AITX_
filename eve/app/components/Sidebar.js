@@ -97,8 +97,8 @@ const Sidebar = ({
   const [isLoading, setIsLoading] = useState(false);
   
   // Sign in form state
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [signInEmail, setSignInEmail] = useState('');
+  const [signInPassword, setSignInPassword] = useState('');
   const [signInError, setSignInError] = useState('');
   
   // Sign up form state
@@ -107,6 +107,8 @@ const Sidebar = ({
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
   const [signUpError, setSignUpError] = useState('');
+  const [privacyChecked, setPrivacyChecked] = useState(false);
+  const [privacyError, setPrivacyError] = useState('');
   
   // User settings state
   const [userSettings, setUserSettings] = useState({
@@ -360,19 +362,19 @@ const Sidebar = ({
     setSignInError('');
     
     // Validate inputs
-    if (!email.trim()) {
+    if (!signInEmail.trim()) {
       setSignInError('Email is required');
       return;
     }
     
-    if (!password.trim()) {
+    if (!signInPassword.trim()) {
       setSignInError('Password is required');
       return;
     }
     
     // Simple email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(signInEmail)) {
       setSignInError('Please enter a valid email address');
       return;
     }
@@ -386,16 +388,16 @@ const Sidebar = ({
       
       // Mock successful login for demo purposes
       // In a real app, this would be an API call
-      if (email === 'demo@example.com' && password === 'password') {
+      if (signInEmail === 'demo@example.com' && signInPassword === 'password') {
         setUser({
           isLoggedIn: true,
-          name: email.split('@')[0], // Use part of email as name
+          name: signInEmail.split('@')[0], // Use part of email as name
           avatar: "https://via.placeholder.com/60"
         });
         setIsSignInModalVisible(false);
         // Reset form
-        setEmail('');
-        setPassword('');
+        setSignInEmail('');
+        setSignInPassword('');
       } else {
         setSignInError('Invalid email or password');
       }
@@ -404,8 +406,9 @@ const Sidebar = ({
   
   // Handle sign up submission
   const handleSignUpSubmit = () => {
-    // Reset error state
+    // Reset error states
     setSignUpError('');
+    setPrivacyError('');
     
     // Validate inputs
     if (!signUpName.trim()) {
@@ -440,6 +443,12 @@ const Sidebar = ({
       return;
     }
     
+    // Verify privacy policy acceptance
+    if (!privacyChecked) {
+      setPrivacyError('You must agree to the Terms of Service and Privacy Policy');
+      return;
+    }
+    
     // Show loading indicator
     setIsLoading(true);
     
@@ -463,6 +472,8 @@ const Sidebar = ({
       setSignUpEmail('');
       setSignUpPassword('');
       setSignUpConfirmPassword('');
+      setPrivacyChecked(false);
+      setPrivacyError('');
       
       // Show success message
       Alert.alert(
@@ -744,150 +755,118 @@ const Sidebar = ({
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalOverlay}
+          style={{ flex: 1 }}
         >
           <View style={styles.modalBackground}>
-            {/* Background overlay - only this should close the modal */}
             <TouchableOpacity 
-              style={styles.modalBackdrop}
+              style={styles.modalBackdrop} 
               activeOpacity={1}
               onPress={() => setIsSignInModalVisible(false)}
             />
-            
-            {/* Modal content - this should NOT close when clicked */}
-            <View 
-              style={[
-                styles.modalContainer,
-                { backgroundColor: colors.card }
-              ]}
-            >
+            <View style={[
+              styles.modalContainer, 
+              { 
+                backgroundColor: colors.card,
+                borderColor: colors.border 
+              }
+            ]}>
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>
                   Sign In
                 </Text>
-                <TouchableOpacity
+                <TouchableOpacity 
                   onPress={() => setIsSignInModalVisible(false)}
                   style={styles.closeButton}
                 >
-                  <FontAwesome name="times" size={20} color={colors.textSecondary} />
+                  <FontAwesome name="times" size={20} color={colors.text} />
                 </TouchableOpacity>
               </View>
               
-              {/* Form fields */}
-              <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: colors.text }]}>Email</Text>
-                <TextInput
-                  style={[
-                    styles.formInput,
-                    { 
-                      backgroundColor: isDarkTheme ? colors.background : '#fff',
-                      borderColor: colors.border,
-                      color: colors.text
-                    }
-                  ]}
-                  placeholder="Enter your email"
-                  placeholderTextColor={isDarkTheme ? '#888' : '#999'}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-              
-              <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: colors.text }]}>Password</Text>
-                <TextInput
-                  style={[
-                    styles.formInput,
-                    { 
-                      backgroundColor: isDarkTheme ? colors.background : '#fff',
-                      borderColor: colors.border,
-                      color: colors.text
-                    }
-                  ]}
-                  placeholder="Enter your password"
-                  placeholderTextColor={isDarkTheme ? '#888' : '#999'}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={true}
-                />
+              <View style={styles.modalBody}>
+                {/* Email input */}
+                <View style={styles.inputContainer}>
+                  <Text style={[styles.inputLabel, { color: colors.text }]}>
+                    Email
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.input, 
+                      { 
+                        backgroundColor: isDarkTheme ? colors.background : '#f5f5f5',
+                        color: colors.text,
+                        borderColor: colors.border
+                      }
+                    ]}
+                    placeholder="Enter your email"
+                    placeholderTextColor={colors.textSecondary}
+                    value={signInEmail}
+                    onChangeText={setSignInEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                  />
+                </View>
                 
+                {/* Password input */}
+                <View style={styles.inputContainer}>
+                  <Text style={[styles.inputLabel, { color: colors.text }]}>
+                    Password
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.input, 
+                      { 
+                        backgroundColor: isDarkTheme ? colors.background : '#f5f5f5',
+                        color: colors.text,
+                        borderColor: colors.border
+                      }
+                    ]}
+                    placeholder="Enter your password"
+                    placeholderTextColor={colors.textSecondary}
+                    value={signInPassword}
+                    onChangeText={setSignInPassword}
+                    secureTextEntry
+                  />
+                </View>
+                
+                {/* Error message - display common error */}
+                {signInError ? (
+                  <Text style={styles.errorText}>{signInError}</Text>
+                ) : null}
+                
+                {/* Forgot password link */}
                 <TouchableOpacity style={styles.forgotPasswordLink}>
                   <Text style={[styles.linkText, { color: colors.primary }]}>
-                    Forgot Password?
+                    Forgot password?
                   </Text>
                 </TouchableOpacity>
-              </View>
-              
-              {/* Error message */}
-              {signInError ? (
-                <Text style={styles.errorText}>{signInError}</Text>
-              ) : null}
-              
-              {/* Sign In button */}
-              <TouchableOpacity
-                style={[
-                  styles.signInButton,
-                  { backgroundColor: colors.primary }
-                ]}
-                onPress={handleSignInSubmit}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={styles.signInButtonText}>Sign In</Text>
-                )}
-              </TouchableOpacity>
-              
-              {/* OAuth options */}
-              <View style={styles.oauthContainer}>
-                <Text style={[styles.oauthText, { color: colors.textSecondary }]}>
-                  Or sign in with
-                </Text>
-                <View style={styles.oauthButtons}>
-                  <TouchableOpacity 
-                    style={[
-                      styles.oauthButton,
-                      { backgroundColor: isDarkTheme ? '#333' : '#f1f1f1' }
-                    ]}
-                  >
-                    <FontAwesome name="google" size={18} color="#DB4437" />
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[
-                      styles.oauthButton,
-                      { backgroundColor: isDarkTheme ? '#333' : '#f1f1f1' }
-                    ]}
-                  >
-                    <FontAwesome name="facebook" size={18} color="#4267B2" />
+                
+                {/* Sign in button */}
+                <TouchableOpacity 
+                  style={[
+                    styles.authButton, 
+                    { backgroundColor: colors.primary }
+                  ]}
+                  onPress={handleSignInSubmit}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#ffffff" size="small" />
+                  ) : (
+                    <Text style={styles.authButtonText}>Sign In</Text>
+                  )}
+                </TouchableOpacity>
+                
+                {/* Don't have an account link */}
+                <View style={styles.switchAuthContainer}>
+                  <Text style={{ color: colors.text }}>
+                    Don't have an account?
+                  </Text>
+                  <TouchableOpacity onPress={openSignUp}>
+                    <Text style={[styles.linkText, { color: colors.primary }]}>
+                      {" "}Sign Up
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
-              
-              {/* Sign up link */}
-              <View style={styles.signUpContainer}>
-                <Text style={[styles.signUpText, { color: colors.textSecondary }]}>
-                  Don't have an account?
-                </Text>
-                <TouchableOpacity onPress={openSignUp}>
-                  <Text style={[styles.signUpLink, { color: colors.primary }]}>
-                    Sign Up
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              
-              {/* Guest option */}
-              <TouchableOpacity 
-                style={styles.guestButton}
-                onPress={() => {
-                  setIsSignInModalVisible(false);
-                }}
-              >
-                <Text style={[styles.guestButtonText, { color: colors.textSecondary }]}>
-                  Continue as Guest
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -908,184 +887,186 @@ const Sidebar = ({
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalOverlay}
+          style={{ flex: 1 }}
         >
           <View style={styles.modalBackground}>
-            {/* Background overlay - only this should close the modal */}
             <TouchableOpacity 
-              style={styles.modalBackdrop}
+              style={styles.modalBackdrop} 
               activeOpacity={1}
               onPress={() => setIsSignUpModalVisible(false)}
             />
-            
-            {/* Modal content - this should NOT close when clicked */}
-            <View 
-              style={[
-                styles.modalContainer,
-                { backgroundColor: colors.card }
-              ]}
-            >
+            <View style={[
+              styles.modalContainer, 
+              { 
+                backgroundColor: colors.card,
+                borderColor: colors.border 
+              }
+            ]}>
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>
                   Create Account
                 </Text>
-                <TouchableOpacity
+                <TouchableOpacity 
                   onPress={() => setIsSignUpModalVisible(false)}
                   style={styles.closeButton}
                 >
-                  <FontAwesome name="times" size={20} color={colors.textSecondary} />
+                  <FontAwesome name="times" size={20} color={colors.text} />
                 </TouchableOpacity>
               </View>
               
-              {/* Form fields */}
-              <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: colors.text }]}>Name</Text>
-                <TextInput
-                  style={[
-                    styles.formInput,
-                    { 
-                      backgroundColor: isDarkTheme ? colors.background : '#fff',
-                      borderColor: colors.border,
-                      color: colors.text
-                    }
-                  ]}
-                  placeholder="Enter your full name"
-                  placeholderTextColor={isDarkTheme ? '#888' : '#999'}
-                  value={signUpName}
-                  onChangeText={setSignUpName}
-                  autoCapitalize="words"
-                />
-              </View>
-              
-              <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: colors.text }]}>Email</Text>
-                <TextInput
-                  style={[
-                    styles.formInput,
-                    { 
-                      backgroundColor: isDarkTheme ? colors.background : '#fff',
-                      borderColor: colors.border,
-                      color: colors.text
-                    }
-                  ]}
-                  placeholder="Enter your email"
-                  placeholderTextColor={isDarkTheme ? '#888' : '#999'}
-                  value={signUpEmail}
-                  onChangeText={setSignUpEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-              
-              <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: colors.text }]}>Password</Text>
-                <TextInput
-                  style={[
-                    styles.formInput,
-                    { 
-                      backgroundColor: isDarkTheme ? colors.background : '#fff',
-                      borderColor: colors.border,
-                      color: colors.text
-                    }
-                  ]}
-                  placeholder="Create a password (min. 6 characters)"
-                  placeholderTextColor={isDarkTheme ? '#888' : '#999'}
-                  value={signUpPassword}
-                  onChangeText={setSignUpPassword}
-                  secureTextEntry={true}
-                />
-              </View>
-              
-              <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: colors.text }]}>Confirm Password</Text>
-                <TextInput
-                  style={[
-                    styles.formInput,
-                    { 
-                      backgroundColor: isDarkTheme ? colors.background : '#fff',
-                      borderColor: colors.border,
-                      color: colors.text
-                    }
-                  ]}
-                  placeholder="Confirm your password"
-                  placeholderTextColor={isDarkTheme ? '#888' : '#999'}
-                  value={signUpConfirmPassword}
-                  onChangeText={setSignUpConfirmPassword}
-                  secureTextEntry={true}
-                />
-              </View>
-              
-              {/* Error message */}
-              {signUpError ? (
-                <Text style={styles.errorText}>{signUpError}</Text>
-              ) : null}
-              
-              {/* Privacy policy acceptance */}
-              <View style={styles.privacyContainer}>
-                <Text style={[styles.privacyText, { color: colors.textSecondary }]}>
-                  By creating an account, you agree to our{' '}
-                  <Text style={[styles.privacyLink, { color: colors.primary }]}>
-                    Terms of Service
+              <ScrollView style={styles.modalBody}>
+                {/* Name input */}
+                <View style={styles.inputContainer}>
+                  <Text style={[styles.inputLabel, { color: colors.text }]}>
+                    Name
                   </Text>
-                  {' '}and{' '}
-                  <Text style={[styles.privacyLink, { color: colors.primary }]}>
-                    Privacy Policy
-                  </Text>
-                </Text>
-              </View>
-              
-              {/* Sign Up button */}
-              <TouchableOpacity
-                style={[
-                  styles.signInButton,
-                  { backgroundColor: colors.primary }
-                ]}
-                onPress={handleSignUpSubmit}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={styles.signInButtonText}>Create Account</Text>
-                )}
-              </TouchableOpacity>
-              
-              {/* OAuth options */}
-              <View style={styles.oauthContainer}>
-                <Text style={[styles.oauthText, { color: colors.textSecondary }]}>
-                  Or sign up with
-                </Text>
-                <View style={styles.oauthButtons}>
-                  <TouchableOpacity 
+                  <TextInput
                     style={[
-                      styles.oauthButton,
-                      { backgroundColor: isDarkTheme ? '#333' : '#f1f1f1' }
+                      styles.input, 
+                      { 
+                        backgroundColor: isDarkTheme ? colors.background : '#f5f5f5',
+                        color: colors.text,
+                        borderColor: colors.border
+                      }
                     ]}
+                    placeholder="Enter your name"
+                    placeholderTextColor={colors.textSecondary}
+                    value={signUpName}
+                    onChangeText={setSignUpName}
+                  />
+                </View>
+                
+                {/* Email input */}
+                <View style={styles.inputContainer}>
+                  <Text style={[styles.inputLabel, { color: colors.text }]}>
+                    Email
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.input, 
+                      { 
+                        backgroundColor: isDarkTheme ? colors.background : '#f5f5f5',
+                        color: colors.text,
+                        borderColor: colors.border
+                      }
+                    ]}
+                    placeholder="Enter your email"
+                    placeholderTextColor={colors.textSecondary}
+                    value={signUpEmail}
+                    onChangeText={setSignUpEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                  />
+                </View>
+                
+                {/* Password input */}
+                <View style={styles.inputContainer}>
+                  <Text style={[styles.inputLabel, { color: colors.text }]}>
+                    Password
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.input, 
+                      { 
+                        backgroundColor: isDarkTheme ? colors.background : '#f5f5f5',
+                        color: colors.text,
+                        borderColor: colors.border
+                      }
+                    ]}
+                    placeholder="Create a password"
+                    placeholderTextColor={colors.textSecondary}
+                    value={signUpPassword}
+                    onChangeText={setSignUpPassword}
+                    secureTextEntry
+                  />
+                </View>
+                
+                {/* Confirm Password input */}
+                <View style={styles.inputContainer}>
+                  <Text style={[styles.inputLabel, { color: colors.text }]}>
+                    Confirm Password
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.input, 
+                      { 
+                        backgroundColor: isDarkTheme ? colors.background : '#f5f5f5',
+                        color: colors.text,
+                        borderColor: colors.border
+                      }
+                    ]}
+                    placeholder="Confirm your password"
+                    placeholderTextColor={colors.textSecondary}
+                    value={signUpConfirmPassword}
+                    onChangeText={setSignUpConfirmPassword}
+                    secureTextEntry
+                  />
+                </View>
+                
+                {/* Common error message */}
+                {signUpError ? (
+                  <Text style={styles.errorText}>{signUpError}</Text>
+                ) : null}
+                
+                {/* Privacy policy acceptance */}
+                <View style={styles.checkboxContainer}>
+                  <TouchableOpacity 
+                    style={styles.checkbox}
+                    onPress={() => setPrivacyChecked(!privacyChecked)}
                   >
-                    <FontAwesome name="google" size={18} color="#DB4437" />
+                    {privacyChecked ? (
+                      <FontAwesome name="check-square" size={18} color={colors.primary} />
+                    ) : (
+                      <FontAwesome name="square-o" size={18} color={colors.textSecondary} />
+                    )}
                   </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[
-                      styles.oauthButton,
-                      { backgroundColor: isDarkTheme ? '#333' : '#f1f1f1' }
-                    ]}
-                  >
-                    <FontAwesome name="facebook" size={18} color="#4267B2" />
+                  <View style={styles.checkboxLabel}>
+                    <Text style={{ color: colors.text }}>
+                      I agree to the{" "}
+                      <Text style={{ color: colors.primary }}>
+                        Terms of Service
+                      </Text>
+                      {" "}and{" "}
+                      <Text style={{ color: colors.primary }}>
+                        Privacy Policy
+                      </Text>
+                    </Text>
+                  </View>
+                </View>
+                {privacyError ? (
+                  <Text style={styles.errorText}>{privacyError}</Text>
+                ) : null}
+                
+                {/* Sign up button */}
+                <TouchableOpacity 
+                  style={[
+                    styles.authButton, 
+                    { 
+                      backgroundColor: colors.primary,
+                      marginTop: 20
+                    }
+                  ]}
+                  onPress={handleSignUpSubmit}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#ffffff" size="small" />
+                  ) : (
+                    <Text style={styles.authButtonText}>Create Account</Text>
+                  )}
+                </TouchableOpacity>
+                
+                {/* Already have an account link */}
+                <View style={styles.switchAuthContainer}>
+                  <Text style={{ color: colors.text }}>
+                    Already have an account?
+                  </Text>
+                  <TouchableOpacity onPress={openSignIn}>
+                    <Text style={[styles.linkText, { color: colors.primary }]}>
+                      {" "}Sign In
+                    </Text>
                   </TouchableOpacity>
                 </View>
-              </View>
-              
-              {/* Sign in link */}
-              <View style={styles.signUpContainer}>
-                <Text style={[styles.signUpText, { color: colors.textSecondary }]}>
-                  Already have an account?
-                </Text>
-                <TouchableOpacity onPress={openSignIn}>
-                  <Text style={[styles.signUpLink, { color: colors.primary }]}>
-                    Sign In
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              </ScrollView>
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -1823,15 +1804,18 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 5,
   },
-  formGroup: {
+  modalBody: {
+    padding: 16,
+  },
+  inputContainer: {
     marginBottom: 16,
   },
-  formLabel: {
+  inputLabel: {
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 6,
   },
-  formInput: {
+  input: {
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
@@ -1850,95 +1834,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 16,
   },
-  signInButton: {
+  authButton: {
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  signInButtonText: {
+  authButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
-  oauthContainer: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  oauthText: {
-    fontSize: 14,
-    marginBottom: 10,
-  },
-  oauthButtons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  oauthButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 10,
-  },
-  signUpContainer: {
+  switchAuthContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 20,
   },
-  signUpText: {
-    fontSize: 14,
-    marginRight: 4,
-  },
-  signUpLink: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  guestButton: {
-    alignItems: 'center',
-    marginTop: 16,
-    paddingVertical: 10,
-  },
-  guestButtonText: {
-    fontSize: 14,
-  },
-  settingsScrollView: {
-    marginBottom: 16,
-  },
-  sectionHeader: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  disclaimer: {
-    fontSize: 12,
-    marginBottom: 16,
-  },
-  toggleRow: {
+  checkboxContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    marginBottom: 16,
   },
-  toggleInfo: {
+  checkbox: {
+    padding: 5,
+  },
+  checkboxLabel: {
     flex: 1,
-    marginRight: 10,
   },
-  toggleLabel: {
+  privacyError: {
+    color: '#FF4136',
     fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  toggleDescription: {
-    fontSize: 12,
-  },
-  privacyNote: {
-    fontSize: 12,
-    marginTop: 20,
-    marginBottom: 20,
-    textAlign: 'center',
+    marginBottom: 16,
   },
   saveButton: {
     borderRadius: 8,
@@ -1951,16 +1877,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  privacyContainer: {
-    marginBottom: 16,
-  },
-  privacyText: {
+  privacyNote: {
     fontSize: 12,
+    marginTop: 20,
+    marginBottom: 20,
     textAlign: 'center',
-    lineHeight: 18,
-  },
-  privacyLink: {
-    textDecorationLine: 'underline',
   },
 });
 
